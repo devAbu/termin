@@ -89,6 +89,7 @@ Legenda: **MVP** (=V1) **V2** **V3** **V4** **V5+**
 - Radno vrijeme po danima (ponavljajuće)
 - Radno vrijeme/pauze po radniku (godišnji, bolovanje, odsustvo)
 - Cjenovnik i galerija kao samostalna, dijeljiva stranica
+- **Popust na usluzi:** vlasnik može postaviti procentualni popust na pojedinačnu uslugu (npr. -20%), vidljiv klijentu na salon kartici i profilu. Bez definisanog trajanja u V1 — vlasnik ručno uključuje/isključuje. Vremenski ograničeni popusti (datum početka/kraja) ostaju V2 (vidi §4.17, "Promocije/popusti").
 - V2: Preview salona ("Ovako te klijenti vide"), više salona pod jednim vlasnikom (UI)
 
 ### 4.3 Booking Engine (jezgro) — MVP
@@ -101,6 +102,7 @@ Legenda: **MVP** (=V1) **V2** **V3** **V4** **V5+**
 - Blokiranje vremena u kalendaru (pauza, slobodan dan, godišnji)
 - Deep linking iz emaila direktno u aplikaciju/rezervaciju
 - Zakaži ponovo (One-Tap Rebook)
+- **Favorite usluga+radnik:** klijent može eksplicitno označiti kombinaciju usluga+radnik kao "favorite" (npr. nakon rezervacije). Pri sljedećem biranju iste usluge kod istog salona: ako favorite postoji, radnik se automatski selektuje i lista radnika se NE prikazuje (samo opcija "promijeni", koja otvara punu listu na zahtjev). Ako favorite ne postoji, ali klijent je tu uslugu ranije rezervisao kod tog salona, zadnje korišteni radnik je pred-selektovan unutar normalno prikazane liste (soft prijedlog, ne skrivanje opcija). Favorite je specifičan za kombinaciju klijent+salon+usluga — ne prenosi se na drugi salon ni drugu uslugu.
 - V3: Waiting lista. V4: Last-Minute Panic Button, Quick Match. V5+: S.O.S. hitan termin
 
 ### 4.4 Klijent profil — MVP
@@ -134,7 +136,7 @@ Legenda: **MVP** (=V1) **V2** **V3** **V4** **V5+**
 - Filter "Slobodno danas"/"Slobodno sada"
 - Filter po ocjeni, cijeni, dostupnosti
 - Pretraga po nazivu usluge
-- V2: Lokacijska pretraga "blizu mene" (GPS), mapa (Google Maps)
+- **Lokacijska pretraga "blizu mene" (premješteno iz V2 u MVP):** sortiranje/filter salona po udaljenosti od klijenta, na osnovu GPS koordinata iz browsera (klijent) i sačuvanih koordinata salona (geocoding — vidi database.md/backend.md). Vizuelni prikaz na mapi (Google Maps) ostaje V2 — u V1 ide samo sortiranje po distanci, bez mape.
 - V3: Meilisearch integracija — **ne graditi u V1**, standardni SQL upit je dovoljan dok baza salona nije velika
 
 ### 4.8 Portfolio radnika — V2

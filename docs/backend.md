@@ -49,6 +49,18 @@ Ovo je obavezno — ne oslanjati se na to da svaki kontroler ručno doda `->wher
 
 Konfigurisati `filesystems.php` s `r2` diskom koristeći `s3` driver i R2 endpoint. Upload slika salona, radnika, usluga ide kroz ovaj disk, ne `local`/`public` disk — čak i u V1, da se izbjegne migracija fajlova kasnije.
 
+## Geocoding (adresa → koordinate)
+
+Kad se Salon adresa kreira ili mijenja (Salon setup, kasnije uređivanje), backend automatski pretvara adresu u `latitude`/`longitude` putem geocoding servisa — **Nominatim (OpenStreetMap)** za V1: besplatan, dovoljan za obim rijetkih registracija/izmjena adresa (ne poziva se pri svakoj pretrazi, samo pri promjeni adrese salona). Vlasnik nikad ne unosi koordinate ručno.
+
+Ako geocoding ne uspije (npr. nepotpuna/pogrešna adresa), `latitude`/`longitude` ostaju `null` — implementirati kao odvojen Job (queue) nakon snimanja adrese, ne blokirati request-response ciklus čekajući vanjski servis. Salon bez koordinata jednostavno ne učestvuje u distance-sortiranim rezultatima pretrage (fallback ostaje postojeći grad-based filter).
+
+**Računanje udaljenosti klijent↔salon NE zahtijeva vanjski API.** Klijentove koordinate stižu direktno iz browsera (frontend, `navigator.geolocation`), salonove koordinate su već u bazi (iz geocoding koraka) — backend računa udaljenost Haversine formulom, čista matematika, bez ikakvog poziva ka Nominatim ili bilo kom drugom servisu pri pretrazi.
+
+## Favorite usluga+radnik
+
+Endpoint za kreiranje/brisanje `FavoriteServiceWorker` zapisa (vidi `docs/database.md`) — klijentov vlastiti podatak, Policy provjerava da `client_id` odgovara prijavljenom korisniku (nema potrebe za salon-scope proveru, ovo nije `salon_id`-scoped resurs na isti način kao Booking/Worker/Service). Endpoint za dohvat dostupnih radnika za uslugu (booking flow korak 2) treba vratiti i informaciju o postojećem favorite-u ili zadnje korištenom radniku (upit nad `Booking` tabelom ako favorite ne postoji) kao dio odgovora — ne kao odvojen poziv.
+
 ## Email (Resend)
 
 Laravel mail driver konfigurisan na Resend. Svi mailable-i (`app/Mail`) šalju se kroz Queue (`ShouldQueue` interface na Mailable klasi), nikad direktno `Mail::send()` sinhrono.
@@ -66,7 +78,7 @@ Token-based auth. Registracija/login vraća token koji Next.js frontend čuva i 
 ## Šta NE implementirati u V1
 
 - Payment/gateway integracija (Monri/Stripe) — nema Payment modela, nema kontrolera za to
-- Search servis (Meilisearch klijent) — standardni Eloquent upiti s indexima su dovoljni
+- Search servis (Meilisearch klijent) — standardni Eloquent upiti s indexima su dovoljni. Napomena: lokacijsko sortiranje (distance) JESTE dio V1 (vidi sekciju Geocoding gore) — to nije Meilisearch, to je obična SQL/Haversine logika, ne miješati ova dva
 - Push/SMS notification kanali — samo `email` u Notification enum-u
 
 Vidi `docs/specifikacija.md` za pun V1 obim prije dodavanja bilo koje funkcionalnosti van gore navedenog.

@@ -30,6 +30,8 @@ Napomena: jedan `User` s rolom `owner` može posjedovati više `Salon` zapisa (v
 | address | string | |
 | city | string | **indexed** — koristi se u pretrazi |
 | country_code | string(2) | npr. `BA`. Priprema za regionalnu ekspanziju — u V1 uvijek popunjeno |
+| latitude | decimal(10,7), nullable | Popunjava se automatski geocoding-om adrese (vidi backend.md) — vlasnik ne unosi ručno. Koristi se za "blizu mene" sortiranje |
+| longitude | decimal(10,7), nullable | Isto kao latitude — nullable dok geocoding ne uspije; salon bez koordinata jednostavno ne učestvuje u distance-sortiranim rezultatima |
 | category | string/enum | frizerski/kozmetički/nail/barbershop |
 | status | enum(`pending`,`active`,`suspended`) | **indexed** — pending dok admin ne verifikuje |
 | created_at, updated_at | timestamp | |
@@ -60,6 +62,7 @@ Radno vrijeme po radniku — odvojena tabela `worker_schedules` (worker_id FK, d
 | currency | string(3) | npr. `BAM`. Priprema za regionalnu ekspanziju |
 | duration_minutes | integer | |
 | buffer_minutes | integer, default 0 | vrijeme čišćenja/pripreme između termina |
+| discount_percent | integer, nullable | Popust na uslugu (npr. 20 = -20%). Bez trajanja u V1 — vlasnik ručno uključuje/isključuje. `null` = nema popusta |
 | photo_url | string, nullable | |
 | created_at, updated_at | timestamp | |
 
@@ -81,6 +84,20 @@ Veza radnik ↔ usluga (koji radnik radi koju uslugu): `worker_service` pivot ta
 Statusni prelazi i pravila — vidi `docs/specifikacija.md` §3.1 prije bilo kakve izmjene logike statusa.
 
 **Composite index preporučen:** (`salon_id`, `worker_id`, `scheduled_at`) — pokriva najčešći upit (dostupnost radnika u salonu za dati period).
+
+### FavoriteServiceWorker
+| Kolona | Tip | Napomena |
+|---|---|---|
+| id | bigint PK | |
+| client_id | bigint FK → users.id | **indexed** |
+| salon_id | bigint FK → salons.id | **indexed** |
+| service_id | bigint FK → services.id | |
+| worker_id | bigint FK → workers.id | |
+| created_at | timestamp | |
+
+Eksplicitna korisnička akcija (klijent svjesno označava "favorite" nakon rezervacije) — nije izvedeno iz historije, mora biti svoj zapis. Unique constraint na (`client_id`, `salon_id`, `service_id`) — jedan favorite radnik po klijent+salon+usluga kombinaciji. Vidi `docs/specifikacija.md` §4.3.
+
+Napomena: "zadnji korišteni radnik" (kad favorite NE postoji) se NE čuva ovdje — izvodi se upitom nad `Booking` tabelom (zadnji booking istog klijenta za istu uslugu/salon), bez dodatne tabele.
 
 ### Review
 | Kolona | Tip | Napomena |
@@ -148,6 +165,7 @@ Svaka FK kolona i svaka kolona korištena u `WHERE`/filter/sortiranju MORA imati
 - `workers`: index na `salon_id`
 - `services`: index na `salon_id`
 - `bookings`: index na `client_id`, `salon_id`, `worker_id`, `scheduled_at`, `status`; composite (`salon_id`, `worker_id`, `scheduled_at`)
+- `favorite_service_worker`: composite unique (`client_id`, `salon_id`, `service_id`)
 - `reviews`: unique index na `booking_id`
 - `blacklist_entries`: composite (`salon_id`, `client_id`)
 - `client_notes`: composite (`salon_id`, `client_id`)

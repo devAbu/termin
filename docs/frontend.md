@@ -55,6 +55,19 @@ i18n/
 
 Vidi `docs/specifikacija.md` §4.3 — usluga → radnik → termin → potvrda. Implementirati kao wizard komponenta (`components/booking/`) koja čuva izabrane korake u lokalnom state-u dok se ne pošalje finalni zahtjev. Real-time provjera dostupnosti (da slot još nije zauzet) prije finalne potvrde.
 
+**Korak 2 (izbor radnika) — tri stanja, zavisno od podataka koje backend vrati za izabranu uslugu:**
+1. **Nova usluga** (klijent je nikad nije rezervisao kod ovog salona) — prikaži sve dostupne radnike, ništa pred-selektovano.
+2. **Ranije rezervisana, bez favorite-a** — prikaži sve radnike, zadnje korišteni radnik je pred-selektovan (soft prijedlog, klijent može slobodno birati drugog).
+3. **Favorite postavljen** — NE prikazuj listu radnika. Prikaži samo odabranog (favorite) radnika s jasnom opcijom "Promijeni" koja na klik otvara punu listu (fallback na stanje 1/2).
+
+Nakon uspješne rezervacije, ponudi klijentu opciju da označi tu kombinaciju usluga+radnik kao "favorite" (vidi `docs/database.md` — `FavoriteServiceWorker`).
+
+## Lokacijska pretraga ("blizu mene")
+
+Pretraga stranica i Home page (sekcija "Najbliže tebi", pored postojeće "Popularno u [gradu]") traže pristup lokaciji putem browser geolocation API-ja (`navigator.geolocation.getCurrentPosition`), uz jasno objašnjenje ZAŠTO prije samog browser prompta (npr. kratka poruka "Dozvoli lokaciju da vidiš najbliže salone"). Ako korisnik odbije ili API nije dostupan — **tih fallback** na postojeći grad-based filter (Pretraga) ili samo prikaz "Popularno" bez "Najbliže tebi" sekcije (Home page), bez greške ili blokirajuće poruke; korisnik ne smije osjetiti da je nešto "pošlo po zlu" samo zato što nije dao dozvolu.
+
+Koordinate se šalju backend-u kao dio pretraga zahtjeva; sortiranje/računanje udaljenosti se dešava na backend-u (vidi `docs/backend.md` — Geocoding), frontend samo prikazuje već sortirane rezultate i, opciono, udaljenost uz svaki salon ("1.2 km").
+
 ## i18n
 
 Next.js i18n routing od početka (`/bs/...` čak i ako je trenutno jedini jezik), svi tekstovi kroz translation fajlove (`i18n/`), nikad hardkodiran tekst u komponenti. Ovo omogućava dodavanje HR/SR/EN kasnije (V5+) bez redizajna.
