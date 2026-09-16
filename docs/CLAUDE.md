@@ -69,6 +69,7 @@ Frontend komunicira s backendom isključivo preko REST API-ja (Sanctum token aut
 
 | Fajl | Kad ga čitati |
 |---|---|
+| `docs/PROGRESS.md` | **OBAVEZNO PRVO, na početku SVAKE sesije**, prije bilo čega drugog — checklist stanja projekta (šta je gotovo, u toku, nije početo). Vrijedi bez obzira da li nastavlja ista osoba ili neko drugi preuzima rad. |
 | `docs/specifikacija.md` | Pri bilo kojoj nedoumici oko obima (šta je V1 vs V2+), poslovnih pravila, ili prioriteta funkcionalnosti |
 | `docs/architecture.md` | Prije bilo kakvog rada na tenant izolaciji, multi-salon logici, ili strukturnim odlukama |
 | `docs/database.md` | Prije pisanja/mijenjanja migracija, modela, ili upita — sadrži pun data model i indexing pravila |
@@ -78,6 +79,10 @@ Frontend komunicira s backendom isključivo preko REST API-ja (Sanctum token aut
 | `docs/mobile.md` | Samo kad se eksplicitno počne raditi na mobilnoj aplikaciji (V3+) — trenutno referentni dokument, ne aktivni razvoj |
 | `docs/design.md` | Pri radu na vizuelnom dijelu frontenda — trenutno skeleton/placeholder, popunjava se tokom dizajn faze |
 
+## Praćenje napretka (PROGRESS.md)
+
+`docs/PROGRESS.md` je checklist svih glavnih zadataka projekta (setup, migracije, modeli, auth, booking engine, svaki ekran) sa statusima `[ ]`/`[~]`/`[x]`. Ažurira se nakon SVAKOG završenog zadatka, ne samo na kraju sesije. Ovo je mehanizam koji omogućava da se rad nastavi bez gubitka konteksta — bilo nakon pauze (isteknuti tokeni, nova sedmica) bilo kad drugi developer preuzme projekat. Ako `docs/PROGRESS.md` ne postoji, kreirati ga prije početka bilo kakvog rada.
+
 ## Status projekta
 
-V1.0 specifikacija je finalizovana (avgust 2026), s otvorenim pitanjima dokumentovanim u `docs/specifikacija.md` (poglavlje 13 originalnog dokumenta) koja ne blokiraju V1 development. Tech stack potvrđen. MD fajlovi u pripremi — development još nije počeo.
+V1.0 specifikacija je finalizovana (avgust 2026), dizajn sistem i svih 15 ključnih ekrana su gotovi u Claude Design (3 kruga QA provjere), s otvorenim pitanjima dokumentovanim u `docs/specifikacija.md` (poglavlje 6) koja ne blokiraju V1 development. Tech stack potvrđen. Development (Claude Code) počinje.
