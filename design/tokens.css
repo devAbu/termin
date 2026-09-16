@@ -1,0 +1,255 @@
+/* SrediMe design tokens — reconstructed from the Claude Design project
+   (project id 089e1262-0841-4481-a4b2-4e12f6104048, design system
+   "sredime-design-system-8009360d-1358-4569-ab2d-009230ef4e6a").
+   Source of truth for values: ds/_ds_manifest.json in that project.
+   Do not hand-edit values here without checking the source project first. */
+
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@font-face {
+  font-family: "Plus Jakarta Sans Fallback";
+  font-style: normal;
+  font-weight: 400 800;
+  src: local("Plus Jakarta Sans"), local("Segoe UI"), local("Helvetica Neue");
+  ascent-override: 96%;
+  descent-override: 24%;
+}
+
+:root {
+  /* Colors — indigo (primary) */
+  --indigo-50: #F1F1F8;
+  --indigo-100: #E0E0EF;
+  --indigo-200: #BFBEDC;
+  --indigo-300: #9694C4;
+  --indigo-400: #6764A2;
+  --indigo-500: #443F86;
+  --indigo-600: #2E2B72;
+  --indigo-700: #26235E;
+  --indigo-800: #1C1A47;
+  --indigo-900: #131230;
+
+  /* Colors — gold (accent) */
+  --gold-50: #FDF6EC;
+  --gold-100: #FAEAD2;
+  --gold-200: #F4D3A4;
+  --gold-300: #EEBE79;
+  --gold-400: #E8A855;
+  --gold-500: #D18F38;
+  --gold-600: #A96E24;
+  --gold-700: #7C4F16;
+
+  /* Colors — slate (neutrals) */
+  --slate-0: #FFFFFF;
+  --slate-25: #FBFCFD;
+  --slate-50: #F8FAFC;
+  --slate-100: #F1F5F9;
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --slate-900: #0F172A;
+
+  /* Semantic states */
+  --success-bg: #D1FAE5;
+  --success-fg: #059669;
+  --success-border: #A7F3D0;
+  --danger-bg: #FFE4E6;
+  --danger-fg: #E11D48;
+  --danger-border: #FECDD3;
+  --warning-bg: #FEF3C7;
+  --warning-fg: #D97706;
+  --warning-border: #FDE68A;
+  --info-bg: var(--indigo-50);
+  --info-fg: var(--indigo-600);
+  --info-border: var(--indigo-100);
+
+  /* Brand aliases */
+  --brand: var(--indigo-600);
+  --brand-hover: var(--indigo-700);
+  --brand-active: var(--indigo-800);
+  --brand-subtle: var(--indigo-50);
+  --brand-on: var(--slate-0);
+  --accent: var(--gold-400);
+  --accent-hover: var(--gold-500);
+  --accent-active: var(--gold-600);
+  --accent-subtle: var(--gold-50);
+  --accent-on: var(--indigo-900);
+
+  /* Surfaces */
+  --surface-canvas: var(--slate-50);
+  --surface-card: var(--slate-0);
+  --surface-sunken: var(--slate-100);
+  --surface-inverse: var(--indigo-600);
+  --surface-overlay: rgba(15, 23, 42, 0.45);
+
+  /* Text */
+  --text-primary: var(--slate-900);
+  --text-secondary: var(--slate-500);
+  --text-muted: var(--slate-400);
+  --text-on-brand: var(--slate-0);
+  --text-on-accent: var(--indigo-900);
+  --text-link: var(--indigo-600);
+  --text-link-hover: var(--indigo-800);
+
+  /* Borders / focus */
+  --border-subtle: var(--slate-200);
+  --border-strong: var(--slate-300);
+  --border-brand: var(--indigo-600);
+  --focus-ring: rgba(46, 43, 114, 0.28);
+
+  /* Icons */
+  --icon-default: var(--indigo-600);
+  --icon-muted: var(--slate-400);
+  --icon-on-brand: var(--slate-0);
+
+  /* Typography */
+  --font-sans: "Plus Jakarta Sans", "Plus Jakarta Sans Fallback", system-ui, sans-serif;
+  --font-body: var(--font-sans);
+  --font-display: var(--font-sans);
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 38px;
+  --text-5xl: 48px;
+  --text-6xl: 60px;
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+
+  --type-hero-size: var(--text-5xl);
+  --type-hero-weight: var(--weight-bold);
+  --type-hero-leading: var(--leading-tight);
+  --type-hero-tracking: var(--tracking-tight);
+  --type-h1-size: var(--text-4xl);
+  --type-h2-size: var(--text-2xl);
+  --type-h3-size: var(--text-xl);
+  --type-h4-size: var(--text-lg);
+  --type-heading-weight: var(--weight-bold);
+  --type-label-size: var(--text-sm);
+  --type-label-weight: var(--weight-medium);
+  --type-body-size: var(--text-base);
+  --type-body-weight: var(--weight-regular);
+  --type-body-leading: var(--leading-relaxed);
+  --type-meta-size: var(--text-sm);
+  --type-meta-weight: var(--weight-regular);
+  --type-eyebrow-size: var(--text-xs);
+  --type-eyebrow-weight: var(--weight-semibold);
+  --type-eyebrow-tracking: var(--tracking-wide);
+  --type-price-weight: var(--weight-bold);
+
+  /* Spacing (4px base) */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --gap-inline: var(--space-2);
+  --gap-stack: var(--space-3);
+  --card-padding: var(--space-6);
+  --card-padding-compact: var(--space-4);
+  --section-gap: var(--space-12);
+  --page-gutter: var(--space-6);
+  --container-max: 1200px;
+  --container-narrow: 720px;
+  --control-height-sm: 36px;
+  --control-height-md: 44px;
+  --control-height-lg: 52px;
+
+  /* Radius */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 999px;
+  --radius-card: var(--radius-xl);
+  --radius-control: var(--radius-md);
+  --radius-pill: var(--radius-full);
+  --radius-modal: var(--radius-2xl);
+  --radius-image: var(--radius-lg);
+
+  /* Elevation */
+  --shadow-none: none;
+  --shadow-card: 0px 4px 12px rgba(15, 23, 42, 0.05);
+  --shadow-card-hover: 0px 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-raised: 0px 2px 6px rgba(15, 23, 42, 0.06);
+  --shadow-popover: 0px 12px 32px rgba(15, 23, 42, 0.12);
+  --shadow-modal: 0px 24px 64px rgba(15, 23, 42, 0.18);
+  --shadow-focus: 0 0 0 3px var(--focus-ring);
+  --shadow-inset-line: inset 0 -1px 0 var(--border-subtle);
+  --blur-overlay: blur(6px);
+  --blur-sticky: blur(12px);
+
+  /* Motion */
+  --duration-instant: 80ms;
+  --duration-fast: 140ms;
+  --duration-normal: 220ms;
+  --duration-slow: 340ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --transition-control: background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+  --transition-card: box-shadow var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
+  --press-scale: 0.98;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--type-body-size);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-relaxed);
+  color: var(--text-primary);
+  background: var(--surface-canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4 {
+  margin: 0;
+  font-weight: var(--type-heading-weight);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-primary);
+}
+h1 { font-size: var(--type-h1-size); letter-spacing: var(--tracking-tight); }
+h2 { font-size: var(--type-h2-size); }
+h3 { font-size: var(--type-h3-size); }
+h4 { font-size: var(--type-h4-size); }
+p { margin: 0; text-wrap: pretty; }
+a { color: var(--text-link); text-decoration: none; transition: color var(--duration-fast) var(--ease-standard); }
+a:hover { color: var(--text-link-hover); text-decoration: underline; text-underline-offset: 3px; }
+button { font-family: inherit; }
+:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+}
