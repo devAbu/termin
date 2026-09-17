@@ -1,0 +1,36 @@
+[
+  { "id": 1, "salonId": 1, "groupLabel": "Frizerske usluge", "name": "Žensko šišanje", "price": "35.00", "currency": "BAM", "durationMinutes": 45, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [1, 2] },
+  { "id": 2, "salonId": 1, "groupLabel": "Frizerske usluge", "name": "Muško šišanje", "price": "20.00", "currency": "BAM", "durationMinutes": 30, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [3] },
+  { "id": 3, "salonId": 1, "groupLabel": "Frizerske usluge", "name": "Feniranje", "price": "20.00", "currency": "BAM", "durationMinutes": 30, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [1, 2] },
+  { "id": 4, "salonId": 1, "groupLabel": "Bojenje", "name": "Bojenje cijele kose", "price": "70.00", "currency": "BAM", "durationMinutes": 120, "bufferMinutes": 15, "discountPercent": 20, "photoUrl": null, "workerIds": [1] },
+  { "id": 5, "salonId": 1, "groupLabel": "Bojenje", "name": "Pramenovi", "price": "80.00", "currency": "BAM", "durationMinutes": 150, "bufferMinutes": 15, "discountPercent": null, "photoUrl": null, "workerIds": [1] },
+  { "id": 6, "salonId": 1, "groupLabel": "Nokti", "name": "Manikir", "price": "25.00", "currency": "BAM", "durationMinutes": 40, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [2] },
+
+  { "id": 7, "salonId": 2, "groupLabel": "Barbershop usluge", "name": "Muško šišanje", "price": "15.00", "currency": "BAM", "durationMinutes": 30, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [4, 5] },
+  { "id": 8, "salonId": 2, "groupLabel": "Barbershop usluge", "name": "Brijanje", "price": "12.00", "currency": "BAM", "durationMinutes": 20, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [4, 5] },
+  { "id": 9, "salonId": 2, "groupLabel": "Barbershop usluge", "name": "Šišanje i brada", "price": "25.00", "currency": "BAM", "durationMinutes": 45, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [4] },
+
+  { "id": 10, "salonId": 3, "groupLabel": "Nokti", "name": "Manikir", "price": "25.00", "currency": "BAM", "durationMinutes": 40, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [7] },
+  { "id": 11, "salonId": 3, "groupLabel": "Nokti", "name": "Pedikir", "price": "30.00", "currency": "BAM", "durationMinutes": 50, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [7] },
+  { "id": 12, "salonId": 3, "groupLabel": "Nokti", "name": "Gel lak", "price": "35.00", "currency": "BAM", "durationMinutes": 60, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [6] },
+
+  { "id": 13, "salonId": 4, "groupLabel": "Tretmani lica", "name": "Čišćenje lica", "price": "30.00", "currency": "BAM", "durationMinutes": 60, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [8] },
+  { "id": 14, "salonId": 4, "groupLabel": "Tretmani lica", "name": "Anti-age tretman", "price": "45.00", "currency": "BAM", "durationMinutes": 75, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [8] },
+  { "id": 15, "salonId": 4, "groupLabel": "Depilacija", "name": "Depilacija nogu", "price": "20.00", "currency": "BAM", "durationMinutes": 30, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [9] },
+
+  { "id": 16, "salonId": 5, "groupLabel": "Frizerske usluge", "name": "Žensko šišanje", "price": "18.00", "currency": "BAM", "durationMinutes": 45, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [10] },
+  { "id": 17, "salonId": 5, "groupLabel": "Frizerske usluge", "name": "Feniranje", "price": "15.00", "currency": "BAM", "durationMinutes": 30, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [10, 11] },
+  { "id": 18, "salonId": 5, "groupLabel": "Frizerske usluge", "name": "Svečana frizura", "price": "40.00", "currency": "BAM", "durationMinutes": 60, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [11] },
+
+  { "id": 19, "salonId": 6, "groupLabel": "Obrve i trepavice", "name": "Regulacija obrva", "price": "10.00", "currency": "BAM", "durationMinutes": 20, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [12] },
+  { "id": 20, "salonId": 6, "groupLabel": "Obrve i trepavice", "name": "Laminacija trepavica", "price": "35.00", "currency": "BAM", "durationMinutes": 60, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [13] },
+  { "id": 21, "salonId": 6, "groupLabel": "Tretmani lica", "name": "Čišćenje lica", "price": "28.00", "currency": "BAM", "durationMinutes": 60, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [12] },
+
+  { "id": 22, "salonId": 7, "groupLabel": "Frizerske usluge", "name": "Muško šišanje", "price": "16.00", "currency": "BAM", "durationMinutes": 30, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [14] },
+  { "id": 23, "salonId": 7, "groupLabel": "Frizerske usluge", "name": "Žensko šišanje", "price": "22.00", "currency": "BAM", "durationMinutes": 45, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [15] },
+  { "id": 24, "salonId": 7, "groupLabel": "Bojenje", "name": "Bojenje cijele kose", "price": "65.00", "currency": "BAM", "durationMinutes": 100, "bufferMinutes": 15, "discountPercent": null, "photoUrl": null, "workerIds": [15] },
+
+  { "id": 25, "salonId": 8, "groupLabel": "Barbershop usluge", "name": "Muško šišanje", "price": "14.00", "currency": "BAM", "durationMinutes": 30, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [16, 17] },
+  { "id": 26, "salonId": 8, "groupLabel": "Barbershop usluge", "name": "Brijanje", "price": "10.00", "currency": "BAM", "durationMinutes": 20, "bufferMinutes": 5, "discountPercent": null, "photoUrl": null, "workerIds": [16] },
+  { "id": 27, "salonId": 8, "groupLabel": "Barbershop usluge", "name": "Brada i šišanje", "price": "22.00", "currency": "BAM", "durationMinutes": 50, "bufferMinutes": 10, "discountPercent": null, "photoUrl": null, "workerIds": [17] }
+]

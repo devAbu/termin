@@ -1,0 +1,26 @@
+[
+  { "id": 1, "bookingId": 4, "salonId": 1, "clientName": "Sanela K.", "rating": 5, "comment": "Tačno na vrijeme, bez čekanja. Rezervacija preko aplikacije je bila pitanje minute.", "createdAt": "2026-09-14T09:00:00Z", "serviceName": "Bojenje cijele kose", "workerName": "Amina Selimović" },
+  { "id": 2, "bookingId": 102, "salonId": 1, "clientName": "Dino M.", "rating": 5, "comment": "Amina je odlična s bojom. Jedini salon gdje ne moram zvati pet puta.", "createdAt": "2026-09-03T09:00:00Z", "serviceName": "Muško šišanje", "workerName": "Mirza Begić" },
+  { "id": 3, "bookingId": 103, "salonId": 1, "clientName": "Emina P.", "rating": 4, "comment": "Sve super, samo je bilo malo bučno. Termin je bio potvrđen odmah.", "createdAt": "2026-08-18T09:00:00Z", "serviceName": "Žensko šišanje", "workerName": "Lejla Hadžić" },
+
+  { "id": 4, "bookingId": 104, "salonId": 2, "clientName": "Haris B.", "rating": 5, "comment": "Brzo, čisto i tačno na vrijeme.", "createdAt": "2026-09-12T09:00:00Z", "serviceName": "Muško šišanje", "workerName": "Kenan Halilović" },
+  { "id": 5, "bookingId": 105, "salonId": 2, "clientName": "Faruk N.", "rating": 4, "comment": "Dobra usluga, malo gužve subotom.", "createdAt": "2026-08-28T09:00:00Z", "serviceName": "Brijanje", "workerName": "Adnan Prguda" },
+
+  { "id": 6, "bookingId": 106, "salonId": 3, "clientName": "Amila S.", "rating": 5, "comment": "Gel lak drži duže nego bilo gdje drugo.", "createdAt": "2026-09-13T09:00:00Z", "serviceName": "Gel lak", "workerName": "Amina Kurtović" },
+  { "id": 7, "bookingId": 107, "salonId": 3, "clientName": "Ines T.", "rating": 4, "comment": "Lijep prostor, ljubazno osoblje.", "createdAt": "2026-08-30T09:00:00Z", "serviceName": "Manikir", "workerName": "Selma Đozić" },
+
+  { "id": 8, "bookingId": 108, "salonId": 4, "clientName": "Larisa H.", "rating": 5, "comment": "Koža mi je bila potpuno drugačija poslije tretmana.", "createdAt": "2026-09-11T09:00:00Z", "serviceName": "Čišćenje lica", "workerName": "Vildana Softić" },
+  { "id": 9, "bookingId": 109, "salonId": 4, "clientName": "Belma K.", "rating": 4, "comment": "Opuštajuće i profesionalno.", "createdAt": "2026-08-23T09:00:00Z", "serviceName": "Anti-age tretman", "workerName": "Vildana Softić" },
+
+  { "id": 10, "bookingId": 110, "salonId": 5, "clientName": "Merjem A.", "rating": 4, "comment": "Fina atmosfera, dijete je bilo mirno tokom šišanja.", "createdAt": "2026-09-07T09:00:00Z", "serviceName": "Žensko šišanje", "workerName": "Ella Marić" },
+  { "id": 11, "bookingId": 111, "salonId": 5, "clientName": "Damir P.", "rating": 5, "comment": "Odlična frizura za vjenčanje.", "createdAt": "2026-08-08T09:00:00Z", "serviceName": "Svečana frizura", "workerName": "Tarik Musić" },
+
+  { "id": 12, "bookingId": 112, "salonId": 6, "clientName": "Ajla M.", "rating": 5, "comment": "Trepavice izgledaju prirodno, traju sedmicama.", "createdAt": "2026-09-10T09:00:00Z", "serviceName": "Laminacija trepavica", "workerName": "Nadja Halilagić" },
+  { "id": 13, "bookingId": 113, "salonId": 6, "clientName": "Selma R.", "rating": 5, "comment": "Brzo i uredno, preporučujem.", "createdAt": "2026-09-01T09:00:00Z", "serviceName": "Čišćenje lica", "workerName": "Lamija Zukić" },
+
+  { "id": 14, "bookingId": 114, "salonId": 7, "clientName": "Amar Dž.", "rating": 5, "comment": "Šišanje tačno kako sam tražio.", "createdAt": "2026-09-08T09:00:00Z", "serviceName": "Muško šišanje", "workerName": "Nermin Kovač" },
+  { "id": 15, "bookingId": 115, "salonId": 7, "clientName": "Nejra V.", "rating": 4, "comment": "Boja je ispala odlično, malo duže čekanje.", "createdAt": "2026-08-26T09:00:00Z", "serviceName": "Bojenje cijele kose", "workerName": "Ajla Duraković" },
+
+  { "id": 16, "bookingId": 116, "salonId": 8, "clientName": "Kerim S.", "rating": 5, "comment": "Klasičan barbershop feeling, brijanje britvom je vrhunsko.", "createdAt": "2026-09-14T09:00:00Z", "serviceName": "Brijanje", "workerName": "Haris Čolić" },
+  { "id": 17, "bookingId": 117, "salonId": 8, "clientName": "Denis O.", "rating": 4, "comment": "Dobra usluga, malo skuplje od očekivanog.", "createdAt": "2026-08-29T09:00:00Z", "serviceName": "Muško šišanje", "workerName": "Elvis Brković" }
+]

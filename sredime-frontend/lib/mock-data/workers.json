@@ -1,0 +1,26 @@
+[
+  { "id": 1, "salonId": 1, "name": "Amina Selimović", "position": "Frizer / kolorist", "bio": "Deset godina iskustva, specijalizirana za bojenje i korekciju boje.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 14:30" },
+  { "id": 2, "salonId": 1, "name": "Lejla Hadžić", "position": "Frizer", "bio": "Šišanje i feniranje, radi jutarnje smjene.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Sutra, 09:00" },
+  { "id": 3, "salonId": 1, "name": "Mirza Begić", "position": "Barber", "bio": "Muško šišanje, brijanje i oblikovanje brade.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 16:00" },
+
+  { "id": 4, "salonId": 2, "name": "Kenan Halilović", "position": "Barber", "bio": "Muško šišanje i brijanje britvom, deset godina za stolicom.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 12:30" },
+  { "id": 5, "salonId": 2, "name": "Adnan Prguda", "position": "Barber", "bio": "Oblikovanje brade i klasično šišanje.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 15:00" },
+
+  { "id": 6, "salonId": 3, "name": "Amina Kurtović", "position": "Nail tehničar", "bio": "Gel lak i nadogradnja, radi i pedikir.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Sutra, 10:00" },
+  { "id": 7, "salonId": 3, "name": "Selma Đozić", "position": "Nail tehničar", "bio": "Manikir i nail art.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 17:30" },
+
+  { "id": 8, "salonId": 4, "name": "Vildana Softić", "position": "Kozmetičar", "bio": "Tretmani lica i čišćenje kože, koristi profesionalnu kozmetiku.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 17:00" },
+  { "id": 9, "salonId": 4, "name": "Amra Bešić", "position": "Kozmetičar", "bio": "Depilacija i masaža lica.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Sutra, 11:00" },
+
+  { "id": 10, "salonId": 5, "name": "Ella Marić", "position": "Frizer", "bio": "Šišanje za sve uzraste, specijalizirana za dječije šišanje.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "U srijedu, 10:00" },
+  { "id": 11, "salonId": 5, "name": "Tarik Musić", "position": "Frizer", "bio": "Feniranje i svečane frizure.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Sutra, 09:30" },
+
+  { "id": 12, "salonId": 6, "name": "Lamija Zukić", "position": "Kozmetičar", "bio": "Obrve, trepavice i čišćenje lica.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 13:00" },
+  { "id": 13, "salonId": 6, "name": "Nadja Halilagić", "position": "Kozmetičar", "bio": "Laminacija trepavica i obrva.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Sutra, 12:00" },
+
+  { "id": 14, "salonId": 7, "name": "Nermin Kovač", "position": "Frizer", "bio": "Muško i žensko šišanje, bojenje.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 15:00" },
+  { "id": 15, "salonId": 7, "name": "Ajla Duraković", "position": "Frizer", "bio": "Feniranje i pramenovi.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Sutra, 10:30" },
+
+  { "id": 16, "salonId": 8, "name": "Haris Čolić", "position": "Barber", "bio": "Brijanje i šišanje, radi po starinskom stilu.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Sutra, 11:00" },
+  { "id": 17, "salonId": 8, "name": "Elvis Brković", "position": "Barber", "bio": "Oblikovanje brade.", "photoUrl": null, "canBlockClients": false, "nextSlotLabel": "Danas, 14:00" }
+]

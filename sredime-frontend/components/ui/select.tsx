@@ -7,7 +7,7 @@ function Select({
   size = "md",
   children,
   ...props
-}: React.ComponentProps<"select"> & { size?: "md" | "lg" }) {
+}: Omit<React.ComponentProps<"select">, "size"> & { size?: "md" | "lg" }) {
   return (
     <span className="relative flex items-center">
       <select

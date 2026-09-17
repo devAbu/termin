@@ -5,7 +5,7 @@ function Input({
   className,
   size = "md",
   ...props
-}: React.ComponentProps<"input"> & { size?: "md" | "lg" }) {
+}: Omit<React.ComponentProps<"input">, "size"> & { size?: "md" | "lg" }) {
   return (
     <input
       data-slot="input"

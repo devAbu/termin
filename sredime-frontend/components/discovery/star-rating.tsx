@@ -4,10 +4,12 @@ import { cn } from "@/lib/utils";
 export function StarRating({
   rating,
   reviewCount,
+  showValue = true,
   className,
 }: {
   rating: number;
   reviewCount?: number;
+  showValue?: boolean;
   className?: string;
 }) {
   return (
@@ -21,10 +23,14 @@ export function StarRating({
           />
         ))}
       </span>
-      <span className="font-bold text-text-primary">
-        {rating.toFixed(1).replace(".", ",")}
-      </span>
-      {reviewCount != null && <span>({reviewCount})</span>}
+      {showValue && (
+        <>
+          <span className="font-bold text-text-primary">
+            {rating.toFixed(1).replace(".", ",")}
+          </span>
+          {reviewCount != null && <span>({reviewCount})</span>}
+        </>
+      )}
     </span>
   );
 }

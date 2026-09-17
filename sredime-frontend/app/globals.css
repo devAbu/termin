@@ -217,6 +217,7 @@
   --color-brand-hover: var(--brand-hover);
   --color-brand-active: var(--brand-active);
   --color-brand-subtle: var(--brand-subtle);
+  --color-brand-on: var(--brand-on);
   --color-success-bg: var(--success-bg);
   --color-success-fg: var(--success-fg);
   --color-success-border: var(--success-border);

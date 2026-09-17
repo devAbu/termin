@@ -1,0 +1,4 @@
+[
+  { "id": 1, "salonId": 1, "clientName": "Sanela Kovačević", "authorName": "Selma Hodžić", "text": "Preferira termine ujutro, uvijek dolazi tačno na vrijeme.", "createdAt": "2026-07-21T10:15:00" },
+  { "id": 2, "salonId": 1, "clientName": "Sanela Kovačević", "authorName": "Lejla Hadžić", "text": "Alergična na amonijak — koristiti blagu boju bez amonijaka.", "createdAt": "2026-08-16T09:30:00" }
+]
