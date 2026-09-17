@@ -23,13 +23,14 @@ import {
   Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge, type badgeVariants } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatMonthShort } from "@/lib/format";
+import { formatPrice, formatMonthShort, getEffectivePrice } from "@/lib/format";
 import type { BookingDetails, SalonClientSummary } from "@/lib/api/bookings";
 import { NewAppointmentModal, type NewBookingInput } from "@/components/owner/new-appointment-modal";
 import type { ClientNote, Salon, Service, Worker, BookingStatus } from "@/types/entities";
@@ -39,7 +40,7 @@ import type { VariantProps } from "class-variance-authority";
 const NO_SHOW_THRESHOLD = 3;
 const NO_SHOW_WINDOW_DAYS = 90;
 
-type Role = "owner" | "worker";
+export type Role = "owner" | "worker";
 type BadgeTone = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 type HistoryFilter = "all" | "completed" | "cancelled" | "no_show";
 
@@ -94,6 +95,7 @@ export function ClientHistoryContent({
   allSalonBookings,
   initialNotes,
   pendingCount,
+  initialRole = "owner",
 }: {
   salon: Salon;
   workers: Worker[];
@@ -104,12 +106,16 @@ export function ClientHistoryContent({
   allSalonBookings: BookingDetails[];
   initialNotes: ClientNote[];
   pendingCount: number;
+  initialRole?: Role;
 }) {
   const t = useTranslations("dashboard");
   const tc = useTranslations("clientHistory");
   const tStatus = useTranslations("bookingStatus");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const [role, setRole] = useState<Role>("owner");
+  const [role, setRole] = useState<Role>(initialRole);
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const [notes, setNotes] = useState<ClientNote[]>(initialNotes);
   const [draft, setDraft] = useState("");
@@ -128,6 +134,13 @@ export function ClientHistoryContent({
     setTimeout(() => setToast((cur) => (cur === msg ? null : cur)), 2600);
   }
 
+  function selectRole(r: Role) {
+    setRole(r);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("role", r);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
   const isOwner = role === "owner";
 
   const allBookings = useMemo(
@@ -136,7 +149,7 @@ export function ClientHistoryContent({
   );
 
   const completed = allBookings.filter((b) => b.status === "completed");
-  const totalRevenue = completed.reduce((sum, b) => sum + Number(b.service.price), 0);
+  const totalRevenue = completed.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
   const lastCompleted = completed[0]; // allBookings already sorted newest-first
   const firstBookingAt = allBookings.length ? allBookings[allBookings.length - 1].scheduledAt : null;
 
@@ -154,7 +167,9 @@ export function ClientHistoryContent({
     no_show: ["no_show"],
   };
   const filteredList = FILTER_STATUSES[filter] ? allBookings.filter((b) => FILTER_STATUSES[filter]!.includes(b.status)) : allBookings;
-  const listRevenue = filteredList.filter((b) => b.status === "completed").reduce((sum, b) => sum + Number(b.service.price), 0);
+  const listRevenue = filteredList
+    .filter((b) => b.status === "completed")
+    .reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
 
   const canBlock = isOwner;
   const thresholdReached = noShow90 >= NO_SHOW_THRESHOLD;
@@ -168,12 +183,12 @@ export function ClientHistoryContent({
   const showAlert = !blocked && !proposed && !alertDismissed && thresholdReached;
 
   const NAV: { id: string; label: string; icon: typeof Users; href: string; ownerOnly?: boolean; count?: number; active?: boolean }[] = [
-    { id: "kalendar", label: t("navCalendar"), icon: CalendarDays, href: "/dashboard" },
-    { id: "zahtjevi", label: t("navRequests"), icon: Inbox, href: "/dashboard?tab=zahtjevi", count: pendingCount },
-    { id: "klijenti", label: t("navClients"), icon: Users, href: "/dashboard?tab=klijenti", active: true },
-    { id: "usluge", label: t("navServices"), icon: Tag, href: "/dashboard?tab=usluge", ownerOnly: true },
-    { id: "radnici", label: t("navStaff"), icon: UserPlus, href: "/dashboard?tab=radnici", ownerOnly: true },
-    { id: "vrijeme", label: t("navHours"), icon: Clock, href: "/dashboard?tab=vrijeme" },
+    { id: "kalendar", label: t("navCalendar"), icon: CalendarDays, href: `/dashboard?role=${role}` },
+    { id: "zahtjevi", label: t("navRequests"), icon: Inbox, href: `/dashboard?tab=zahtjevi&role=${role}`, count: pendingCount },
+    { id: "klijenti", label: t("navClients"), icon: Users, href: `/dashboard?tab=klijenti&role=${role}`, active: true },
+    { id: "usluge", label: t("navServices"), icon: Tag, href: `/dashboard?tab=usluge&role=${role}`, ownerOnly: true },
+    { id: "radnici", label: t("navStaff"), icon: UserPlus, href: `/dashboard?tab=radnici&role=${role}`, ownerOnly: true },
+    { id: "vrijeme", label: t("navHours"), icon: Clock, href: `/dashboard?tab=vrijeme&role=${role}` },
     { id: "statistika", label: t("navStats"), icon: BarChart3, href: "/statistika", ownerOnly: true },
   ];
   const visibleNav = NAV.filter((n) => isOwner || !n.ownerOnly);
@@ -232,7 +247,7 @@ export function ClientHistoryContent({
       scheduledAt: isoStr,
       manuallyEntered: true,
       salon: { id: salon.id, name: salon.name, slug: salon.slug, address: salon.address },
-      service: { id: service.id, name: service.name, durationMinutes: service.durationMinutes, bufferMinutes: service.bufferMinutes, price: service.price },
+      service: { id: service.id, name: service.name, durationMinutes: service.durationMinutes, bufferMinutes: service.bufferMinutes, price: service.price, discountPercent: service.discountPercent },
       worker: { id: worker.id, name: worker.name },
     };
     setExtra((cur) => [...cur, booking]);
@@ -296,7 +311,7 @@ export function ClientHistoryContent({
               <button
                 key={r}
                 type="button"
-                onClick={() => setRole(r)}
+                onClick={() => selectRole(r)}
                 className={cn(
                   "h-7 flex-1 rounded-control text-2xs font-semibold",
                   role === r ? "bg-card text-brand" : "bg-transparent text-indigo-200",
@@ -312,7 +327,7 @@ export function ClientHistoryContent({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex flex-col gap-3 border-b border-border-subtle bg-card px-4 py-3 lg:px-6">
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/dashboard?tab=klijenti" className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary">
+            <Link href={`/dashboard?tab=klijenti&role=${role}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary">
               <Icon icon={ChevronLeft} size={16} />
               {tc("backToClients")}
             </Link>
@@ -469,7 +484,7 @@ export function ClientHistoryContent({
                         {tStatus(b.status)}
                       </Badge>
                       <span className={cn("text-sm font-semibold sm:text-right", b.status === "completed" ? "text-text-primary" : "text-text-muted")}>
-                        {b.status === "completed" ? formatPrice(b.service.price) : "—"}
+                        {b.status === "completed" ? formatPrice(getEffectivePrice(b.service.price, b.service.discountPercent)) : "—"}
                       </span>
                     </div>
                   );

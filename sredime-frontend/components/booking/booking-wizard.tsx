@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatDayLabel, formatWeekdayShort } from "@/lib/format";
+import { formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice } from "@/lib/format";
 import { computeSlots, countFreeSlots } from "@/lib/api/availability";
 import type { Salon, Service, Worker } from "@/types/entities";
 
@@ -73,6 +73,7 @@ export function BookingWizard({
   const [done, setDone] = useState(false);
 
   const service = services.find((s) => s.id === serviceId) ?? null;
+  const servicePrice = service ? getEffectivePrice(service.price, service.discountPercent) : 0;
   const eligibleWorkers = service ? workers.filter((w) => service.workerIds.includes(w.id)) : workers;
   const worker = workerChoice && workerChoice !== "any" ? workers.find((w) => w.id === workerChoice) ?? null : null;
   const activeWorkerIds = useMemo(
@@ -310,7 +311,7 @@ export function BookingWizard({
                     <div className="flex flex-col gap-1 rounded-card bg-card p-2 shadow-card">
                       {services.map((s) => {
                         const selected = s.id === serviceId;
-                        const oldPrice = s.discountPercent ? Number(s.price) / (1 - s.discountPercent / 100) : null;
+                        const finalPrice = getEffectivePrice(s.price, s.discountPercent);
                         return (
                           <button
                             key={s.id}
@@ -327,8 +328,8 @@ export function BookingWizard({
                             </div>
                             <div className="flex flex-none items-center gap-3">
                               <div className="flex flex-col items-end">
-                                {oldPrice && <span className="text-xs text-text-muted line-through">{formatPrice(oldPrice)}</span>}
-                                <span className="price text-base">{formatPrice(s.price)}</span>
+                                {s.discountPercent != null && <span className="text-xs text-text-muted line-through">{formatPrice(s.price)}</span>}
+                                <span className="price text-base">{formatPrice(finalPrice)}</span>
                               </div>
                               <span
                                 className={cn(
@@ -583,7 +584,7 @@ export function BookingWizard({
               <div className="h-px bg-border-subtle" />
               <div className="flex items-baseline justify-between">
                 <span className="text-sm text-text-secondary">{t("total")}</span>
-                <span className="text-2xl font-bold text-text-primary">{formatPrice(service.price)}</span>
+                <span className="text-2xl font-bold text-text-primary">{formatPrice(servicePrice)}</span>
               </div>
               <span className="text-xs text-text-secondary">{t("paymentCancelNote")}</span>
             </div>
@@ -594,7 +595,7 @@ export function BookingWizard({
       {!done && service && (
         <div className="sticky bottom-0 z-10 flex items-center gap-3 border-t border-border-subtle bg-white/86 px-4 py-3 shadow-inset-line backdrop-blur-sticky md:hidden">
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-lg font-bold leading-tight text-text-primary">{formatPrice(service.price)}</span>
+            <span className="text-lg font-bold leading-tight text-text-primary">{formatPrice(servicePrice)}</span>
             <span className="truncate text-xs text-text-secondary">{barLine}</span>
           </div>
           <Button type="button" variant="accent" size="lg" disabled={!canNext} onClick={handleNext} className="flex-none">

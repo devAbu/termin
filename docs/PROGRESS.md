@@ -3,27 +3,31 @@
 **OBAVEZNO PRVO ČITANJE na početku svake sesije** (vidi `docs/CLAUDE.md`). Statusi: `[ ]` nije počeo,
 `[~]` u toku, `[x]` gotovo. Ažurirati odmah nakon svakog završenog zadatka, ne čekati kraj sesije.
 
-## Sljedeći koraci (kraj sesije 2026-09-17, deveti krug)
+## Sljedeći koraci (kraj sesije 2026-09-17, četrnaesti krug)
 
-**"Statistika" ekran je završen** (ruta `/statistika`, vidi §11/§12 ispod za detalje) — samostalni
-izvještaj (period Danas/Sedmica/Mjesec/Raspon + filter po radniku), sve računato iz STVARNIH
-`bookings.json` podataka (nema fabrikovanih brojeva kao u dizajn demo-u). `lib/mock-data/bookings.json`
-prošireno sa ~18 novih historijskih termina za Studio Lux (zadnjih ~30 dana) da tjedni/mjesečni
-izvještaji imaju realnu raspodjelu — vidi §12 napomenu. Nova `lib/api/statistics.ts` (bucketing po
-satu/danu/sedmici, capacity/popunjenost, top usluge, stope otkazivanja/nedolazaka, izvještaj po radniku
-— sve pure/testabilne funkcije). Dashboard-ova mini "Statistika" tab OSTAJE (različita svrha po
-specifikaciji §4.6 — brz pregled potvrđenih/nepotvrđenih po radniku), sad dobija "Puni izvještaj →" link
-ka novom ekranu umjesto starog "dolazi kasnije" teksta.
+**SVIH 15 `.dc.html` EKRANA JE GOTOVO** (od "Prijava" nadalje, vidi §12 za puni detalj svakog).
+Fokus sesije se sad pomjera na **frontend polish/proširenja** dok je backend i dalje PAUZIRAN (§0) —
+korisnikova eksplicitna odluka: "posto nam su nam backend, baza, auth i to trenutno manje bitno...sad
+nam je fokus na FRONT (UI/UX)". Dogovorene 3 stavke, pun detalj u **§14** ispod. **14.1 i 14.3 su
+gotovi, 14.2 (favorite + lokacijska pretraga) je namjerno ODGOĐEN za kasnije** — korisnikova odluka,
+najveća/najskuplja stavka od sve tri (najviše tokena), ostaje `[ ]` dok se eksplicitno ne zatraži:
 
-**Korisnikova eksplicitna odluka o redoslijedu: "Prijava" i "Registracija" (auth ekrani) idu ZADNJI, nakon
-svih preostalih javnih/klijent/vlasnik ekrana.** Trenutno stanje — od 15 `.dc.html` ekrana, **11 gotovo**:
-Home page, Pretraga salona, Salon profil, 3-Click Booking, Moji termini, Recenzija, Klijent profil,
-Salon dashboard, Klijent historija, Salon setup, Statistika. **Preostalo je 4:**
-- Marketing (public, bez auth-a): **Za salone** (landing za vlasnike)
-- Vlasnik/salon upravljanje (isti sidebar kao "Salon dashboard"/"Klijent historija"/"Statistika"): **Pozivnica radniku**
-- Zadnje po korisnikovom izboru: **Prijava**, **Registracija**
+1. [x] Popust na usluzi — prava forma za uređivanje usluge u dashboard "Usluge" tabu +
+   `discount_percent` toggle. Usput otkriven i popravljen ŠIRI bug: popust se računao u pogrešnom
+   smjeru (`price` tretiran kao već-diskontovana cijena) kroz CIJELU aplikaciju, uklj. sve
+   prihod-računice u Statistici/Klijent historiji — vidi §14.1 za pun detalj
+2. [ ] **ODGOĐENO** — Favorite usluga+radnik (booking wizard korak 2, sva 3 stanja iz
+   `docs/frontend.md`) + lokacijska pretraga "blizu mene" (`docs/specifikacija.md` §4.3/§4.7)
+3. [x] Rola (Vlasnik/Radnik) se nije prenosila kroz URL između `/dashboard` i
+   `/dashboard/klijenti/[ime]` — popravljeno preko `?role=` search parametra, isti obrazac kao
+   postojeći `?tab=`. (Nije bio bug koji je korisnik prvobitno sumnjao — taj originalni scenario
+   "radnik blokira sebe" nije reprodukovan i korisnik ga je odbacio; ovo je bio NOVI, stvarno nađen,
+   manji problem otkriven pri uživo testiranju.)
 
-Korisnik bira sljedeći ekran na početku svake sesije — ne pretpostavljati redoslijed unutar preostalih 4.
+**Šta ostaje van V1 frontend obima** (nije "ekran" iz liste od 15, nego stvarni backend/funkcionalni
+rad): pravi auth (Sanctum token, sesija, Navbar "ulogovan" state), migracije/modeli, booking engine
+backend, notifikacije email, admin. Sve dokumentovano u §1–§8/§13 ispod, ostaje `[ ]`/`[~]` dok se
+`sredime-backend` eksplicitno ne nastavi (§0 — trenutno PAUZIRAN).
 1. Provjeriti da li se `sredime-frontend` dev server i dalje pokreće čisto (`preview_start` s
    `.claude/launch.json` konfiguracijom `sredime-frontend`). **Napomena:** ovu sesiju je `next dev` više puta
    pao na Windows-specifičnoj grešci (`UNKNOWN: unknown error, open '.next/dev/types/...'`, EPERM-ish file
@@ -137,7 +141,8 @@ Korisnik bira sljedeći ekran na početku svake sesije — ne pretpostavljati re
 - [ ] Onboarding wizard po ulozi (klijent, vlasnik, radnik)
 - [ ] Social login (Google/Apple) — MVP scope, može ići nakon osnovnog email/password flow-a
 - [ ] Role/salon-membership middleware + Policy skeleton (`docs/permissions.md`)
-- [ ] Frontend: Prijava, Registracija, Pozivnica radniku ekrani (vidi dizajn `.dc.html` ako postoje)
+- [x] Frontend: Prijava, Registracija, Pozivnica radniku ekrani — vidi §12 za puni detalj svakog. Sve
+      session-only/mock (nema pravog Sanctum auth-a ispod, vidi ostale stavke ove sekcije koje ostaju `[ ]`)
 
 ## 4. Salon CRUD — `docs/specifikacija.md` §4.2
 
@@ -419,9 +424,9 @@ Korisnik bira sljedeći ekran na početku svake sesije — ne pretpostavljati re
           `lib/mock-data/reviews.json` — lokalni state samo prelazi na "done" prikaz). Submit-ovana
           recenzija se NEĆE pojaviti na Salon profil "Recenzije" tabu ni promijeniti "Izmijeni/Ostavi"
           dugme na "Moji termini" nakon refresh-a
-- [ ] Prijava
-- [ ] Registracija
-- [ ] Pozivnica radniku
+- [x] Prijava (vidi §12 ispod, na samom dnu liste — nakon "Registracija" — za puni detalj)
+- [x] Registracija (vidi §12 ispod, na dnu liste — nakon "Pozivnica radniku" — za puni detalj)
+- [x] Pozivnica radniku (vidi §12 ispod, na dnu liste — nakon "Za salone" — za puni detalj)
 - [x] Salon setup — ruta `/postavljanje-salona` (`app/[locale]/(owner)/postavljanje-salona/page.tsx` +
       `components/owner/salon-setup-content.tsx`), tačno prati `Salon setup.dc.html`. Namjerno BEZ
       sidebar-a (drugačiji layout od "Salon dashboard"/"Klijent historija") — sticky top bar (logo,
@@ -540,12 +545,272 @@ Korisnik bira sljedeći ekran na početku svake sesije — ne pretpostavljati re
         - Vizuelno provjereno desktop (1280px) + mobile (375px): sva 4 perioda (Danas/Sedmica/Mjesec/
           Raspon), filter po radniku (tabela/KPI/graf se ispravno sužavaju na jednog radnika), nevažeći
           custom raspon (prijateljska poruka), i link iz dashboard mini-taba
-- [ ] Za salone (marketing/landing stranica za vlasnike)
+- [x] Za salone — ruta `/za-salone` (`app/[locale]/(public)/za-salone/page.tsx` +
+      `components/marketing/for-salons-content.tsx`), tačno prati `Za salone.dc.html`. Javna marketing
+      stranica za vlasnike (bez auth-a), koristi zajednički `Navbar` (link "Za salone" i `nav.forSalons`
+      ključ već postojali u `messages/bs.json`/`navbar.tsx` iz ranije sesije, samo je stranica na koju
+      pokazuju sad postavljena). Sekcije: hero (badge/naslov/lead/2 CTA dugmeta koja skroluju na
+      `#prijava`/`#dashboard`, 3 checklist stavke) + 3 "problem" kartice desno, "Šta dobijaš" (4 benefit
+      kartice), "Dashboard" (tekst + 4 poente + statični mockup kalendara s indigo sidebar-om — čisto
+      dekorativna ilustracija, imena radnika/usluga u mockup-u su lokalne konstante kao u dizajnu, ne
+      prava mock-data), "Kako počinje" (4 numerisana koraka), i tamna `#prijava` CTA/footer sekcija
+      (naslov + 2 dugmeta na `/registracija`, footer kolone "Za salone"/"Za klijente"/"Kontakt",
+      copyright). Namjerno NE koristi zajednički `components/chrome/footer.tsx` na kraju — dizajnov
+      `#prijava` blok VEĆ jeste ova stranicina footer (druge kolone/linkovi nego generic Footer, koji bi
+      inače duplirao "Imaš salon?" CTA na stranici koja je već ta CTA meta) — reuse-uje `Logo`/`Navbar`/
+      `Button`/`Badge`/`Card`/`Icon` iz `components/ui|chrome/`.
+        - Nove `messages/bs.json` `forSalons.*` ključi (sav tekst preveden, ništa hardkodirano u komponenti
+          osim mockup-a — vidi napomenu iznad)
+        - Vizuelno provjereno desktop (1024px) + mobile (375px): hero, problem kartice, benefit grid,
+          dashboard mockup (sidebar se na <400px sužava na samo ikone, isti breakpoint pattern kao dizajn),
+          koraci, tamna CTA/footer sekcija — sve renderuje ispravno, svi linkovi (nav, hash-anchor, footer)
+          pokazuju na očekivane rute
+- [x] Pozivnica radniku — dizajn (`Pozivnica radniku.dc.html`) ima DVIJE potpuno odvojene polovine
+      (`isOwner`/`isWorker` toggle u demo toolbaru), implementirane kao dva zasebna ekrana:
+        - **Vlasnička strana** — UNUTAR postojećeg "Radnici" taba na `/dashboard` (isti sidebar/nav kao
+          "Salon dashboard"), NIJE nova ruta. Zamijenio stari placeholder (worker-card grid sa
+          samo canBlockClients toggle-om i "Pozovi radnika" dugmetom koje je flash-ovalo "dolazi
+          kasnije" poruku — vidi git historiju `components/owner/dashboard-content.tsx`). Novi prikaz:
+          info banner ("Radnik se ne može registrovati sam..."), "Tim salona" lista (vlasnik + svi
+          `workers` te salona + session-only dodani pozvani radnici), svaki red ima avatar-inicijale,
+          ime, poziciju · kontakt (fabriciran email `ime@salondomen.ba`, `workers.json` nema email
+          polje), status bedž (Vlasnik/Aktivan nalog/Pozivnica poslana/Bez pozivnice — novi
+          `TeamStatus`/`TeamMember` tipovi LOKALNI u `dashboard-content.tsx`, NISU dodani u
+          `types/entities.ts`/`Worker` jer bi to zahtijevalo mijenjanje javnog salon-profila
+          `staff-card.tsx` koji dijeli isti `workers.json`). Postojeći `canBlockClients` toggle
+          ZADRŽAN za stvarne aktivne radnike (nije uklonjen pri redizajnu), samo premješten u red
+          akcija pored badge-a. "Pozovi radnika"/"Pošalji ponovo"/"Pošalji pozivnicu" akcije otvaraju
+          novi `components/owner/invite-worker-modal.tsx` (`InviteWorkerModal`, mode `"new"` ili
+          `"resend"`) — forma (ime/kontakt/pozicija Select) → "poslano" stanje (link + kod generisani
+          klijent-side `generateInviteCode()`, "Kopiraj" dugme s privremenim "Kopirano" stanjem,
+          "Pozovi još jednog" vraća na formu). Sve session-only (React state u `DashboardContent`),
+          ne perzistuje — isti obrazac kao svuda u frontend-first fazi. Vlasnik "Selma Hodžić" prikazan
+          u listi kao poseban red s bedžom "Vlasnik" (dosljedno s postojećim viewer chip identitetom,
+          NE dizajnov placeholder "Amina Hodžić").
+        - **Radnička strana** — NOVA javna ruta `/pozivnica/[token]`
+          (`app/[locale]/(public)/pozivnica/[token]/page.tsx` +
+          `components/invite/worker-invite-content.tsx`), split-screen layout (tamni indigo aside s
+          "Pozvana si u {salon}" + 3 poente lijevo na desktopu, forma desno; jednokolonski na mobile
+          s logom na vrhu). Tri stanja vođena URL `token` parametrom: forma (zaključana Ime/Email polja
+          — vlasnik ih je unio, lozinka + potvrda lozinka, avatar upload placeholder, bio textarea,
+          terms checkbox, "Pridruži se salonu"), "gotovo" (nakon uspješne client-side validacije —
+          dužina lozinke ≥8, poklapanje, terms checked — session-only React state prelazi u "Dobrodošla
+          u {salon}" s "Otvori moj kalendar" linkom na `/dashboard`), "isteklo" (token === "isteklo",
+          tajna/test putanja jer nema pravog token store-a — `/pozivnica/isteklo` — "Zatraži novu
+          pozivnicu" dugme). Nema pravog `worker_invitations` backend-a (docs/PROGRESS.md §3) pa SVAKI
+          token (osim "isteklo") razrješava na isti mock salon (`CURRENT_SALON_ID`/Studio Lux) — isti
+          obrazac kao ostatak vlasnik/radnik ekrana. Pozvani identitet je fiksna nova osoba "Ajla
+          Zukić" (namjerno NIJE postojeći `workers.json` radnik — pozivnica demonstrira NOVOG radnika,
+          korištenje već-aktivnog radnika kao "novog" bi bilo kontradiktorno), vlasnica koja šalje
+          pozivnicu je "Selma Hodžić" (dosljedno, ne dizajnov placeholder).
+        - Novi `messages/bs.json` `workerInvite.*` namespace pokriva OBA ekrana (banner/bedževi/modal
+          na vlasničkoj strani, aside/forma/stanja na radničkoj). Stari neiskorišteni
+          `dashboard.inviteToast` ključ uklonjen (zamijenjen stvarnom funkcionalnošću).
+        - Bug otkriven i popravljen ovu sesiju: `/pozivnica/[token]` je imao ugniježđen `<a>` unutar
+          `<a>` (`<Link href="/"><Logo /></Link>` — `Logo` već sam renderuje svoj `Link`) na mobile-only
+          logo prikazu, što je uzrokovalo React hydration error (nevidljivo na screenshotu, otkriveno
+          kroz `read_console_messages`). Popravljeno pozivanjem `<Logo className="..." />` direktno bez
+          omotača.
+        - Vizuelno provjereno desktop + mobile za oba ekrana: vlasnička strana (owner + worker role
+          toggle prikaz, slanje nove pozivnice, "Pošalji ponovo" na već pozvanom radniku, kopiranje
+          linka), radnička strana (forma → gotovo tok s pravim submit-om, isteklo stanje, split-screen
+          desktop layout s tamnim aside-om).
+- [x] Registracija — ruta `/registracija` (`app/[locale]/(auth)/registracija/page.tsx` +
+      `components/auth/registration-content.tsx`), tačno prati `Registracija.dc.html`. Novi `(auth)`
+      route group (prvi put korišten — `docs/frontend.md` ga je od početka predviđao pored
+      `(public)/(client)/(owner)`). Split-screen layout (tamni indigo aside desktop, top logo mobile),
+      isti obrazac kao `/pozivnica/[token]`.
+        - Rola tab (Klijent/Vlasnik salona) prebacuje CIJEL sadržaj — aside tekst/poente, naslov/podnaslov,
+          čak i max-width kartice (440px klijent, 520px vlasnik, iz dizajna).
+        - **Klijent**: jednostepena forma (Ime i prezime/Email ili mobitel/Lozinka), "ili" separator +
+          Google/Apple social dugmad (kozmetička, samo flash toast — nema pravog OAuth-a), terms
+          checkbox, "Napravi nalog". Uspješan submit: toast + redirect na `/pretraga` (~800ms), testirano
+          end-to-end.
+        - **Vlasnik**: 3-koračni wizard sa step indikatorom (kružići s kvačicom za završene korake,
+          brojem za trenutni/buduće, spojna linija) — isti vizuelni obrazac kao "Salon setup", ali
+          samostalna implementacija (drugačiji broj koraka/kontekst, nije dijeljena komponenta):
+            1. Tvoj nalog — Ime i prezime/Email/Lozinka
+            2. Podaci o salonu — Naziv salona/Adresa/Grad (Select, `lib/constants/categories.ts`
+               `CITIES`)/Kategorija (Select, `CATEGORY_META` labele — ISTE konstante kao Pretraga salona,
+               ne duplirane liste)/Telefon salona (s hint tekstom o privatnosti)
+            3. Provjera — žuti upozorenje-banner ("Salon ide na provjeru prije objave"), pregled svih
+               unesenih podataka (Vlasnik/Email/Salon/Adresa/Kategorija), "Šta slijedi" lista (3 stavke),
+               terms checkbox, Nazad/"Pošalji na provjeru"
+          Nakon slanja: "Hvala na prijavi" završno stanje (success ikona, sva 3 koraka prikazuju kvačicu),
+          "Idi na dashboard" → toast + redirect na `/postavljanje-salona` (~800ms) — **testiran pun
+          end-to-end put Registracija (vlasnik) → Salon setup wizard**, isto poravnanje identiteta kao
+          svugdje (nema hardkodiranog "Studio Lux"/"Selma Hodžić" ovdje — ovo je NOVA registracija,
+          podaci dolaze iz forme, ne iz postojećih fixtures).
+        - Real validacija dodana na SVAKI korak (dizajnov demo script NIJE validirao ništa — isti obrazac
+          popravke kao ranije u Klijent profil/Pozivnica radniku): obavezna polja prije "Nastavi"/submit,
+          lozinka ≥8 znakova, terms checkbox mora biti čekiran prije slanja — sve s toast porukama
+          (`missingFieldsToast`/`passwordTooShortToast`/`termsRequiredToast`).
+        - Novi `messages/bs.json` `registration.*` namespace (sav tekst preveden). Footer mini-linkovi
+          (Uslovi korištenja/Privatnost/Podrška) — isti obrazac kao `components/chrome/footer.tsx`
+          (`/uslovi`, `/privatnost` rute još ne postoje, konzistentno s ostatkom aplikacije).
+        - Bug otkriven i popravljen ovu sesiju: dizajn koristi ikonu `"chrome"` (Google social dugme) iz
+          dizajn-sistemovog ikon seta, ali instalirana `lucide-react` verzija u ovom projektu NEMA `Chrome`
+          named export (`Error: Export Chrome doesn't exist in target module`) — zamijenjeno sa `Globe`
+          (generic, dostupna ikona). Napomena za buduće ekrane: provjeriti `node -e "require('lucide-react')"`
+          prije korištenja manje uobičajenih lucide imena iz dizajn skripti.
+        - Vizuelno i funkcionalno provjereno desktop + mobile: role tab switch (aside/step-indicator/
+          card max-width se ispravno mijenjaju), klijent submit → redirect na Pretragu, vlasnik sva 3
+          koraka + Nazad navigacija + Provjera pregled tačno odražava unesene podatke → Hvala na prijavi →
+          redirect na Salon setup, wizard step labele se sakrivaju na mobile (samo trenutni korak vidljiv,
+          isti breakpoint obrazac kao "Za salone"/"Salon setup").
+- [x] Prijava — ruta `/prijava` (`app/[locale]/(auth)/prijava/page.tsx` +
+      `components/auth/login-content.tsx`), tačno prati `Prijava.dc.html`. **POSLJEDNJI od 15 ekrana —
+      cijela dizajn lista je sad gotova.** Isti split-screen aside+forma layout obrazac kao
+      "Registracija"/"Pozivnica radniku" (tamni indigo aside desktop s 3 poente + footnote, top logo
+      mobile), namjerno SVOJA nezavisna komponenta a ne dijeljeni layout — polja/sadržaj se dovoljno
+      razlikuju po ekranu da bi apstrakcija bila preuranjena (isto opravdanje kao ranije za
+      Registracija/Pozivnica radniku).
+        - Forma: Email ili mobitel (ikona `User`), Lozinka s show/hide toggle-om (`Eye`/`EyeOff`,
+          `type="password"` ↔ `"text"`), "Zaboravljena lozinka" link (samo flash toast — nema
+          Reset lozinke ekrana, nije na listi od 15 i nema `docs/specifikacija.md` stavke za njega u V1
+          frontend obimu), "Ostani prijavljen" checkbox, "ili" separator, Google/Apple social dugmad.
+        - Real validacija dodana (dizajnov demo `login()` handler NIJE provjeravao ništa — isti obrazac
+          popravke kao svugdje ovu sesiju/prošle sesije): oba polja moraju biti popunjena prije
+          "Prijavi se", inače `missingFieldsToast`.
+        - Redirect ponašanje PRATI DIZAJN tačno, uklj. njegovu vlastitu asimetriju: "Prijavi se" i OBA
+          social dugmeta (Google/Apple) redirektuju na `/moji-termini` nakon toast-a (~800ms) — za
+          razliku od Registracije gdje su social dugmad čisto kozmetička (samo flash, bez redirect-a).
+          Nema pravog role-based routing-a (info banner obećava "kalendar ako vodiš salon, ili pretragu
+          ako tražiš termin", ali mock nema stvaran nalog/sesiju da zna koju ulogu typed kredencijali
+          predstavljaju) — ostaje TODO za pravi Sanctum auth (§3), frontend ovdje samo prati dizajnov
+          literalni klik-handler (uvijek Moji termini), ne izmišlja heuristiku za nešto što treba pravi
+          backend da riješi.
+        - Icon-in-input layout (User/Eye ikone unutar polja) je ručno sastavljen (`relative`+`absolute`
+          positioning na `Input` komponenti) jer `components/ui/input.tsx` nema built-in `icon` prop
+          (dizajnov `Input` iz komponenta biblioteke ima, naš ne) — isti obrazac kao zaključana polja u
+          "Pozivnica radniku" radničkoj strani, nije izdvojeno u dijeljenu komponentu (samo 2 mjesta u
+          kodu koriste ovaj layout, ne opravdava apstrakciju još).
+        - Novi `messages/bs.json` `login.*` namespace (sav tekst preveden).
+        - Vizuelno i funkcionalno provjereno desktop (split-screen aside) + mobile (top logo, jednokolonski
+          layout): prazna forma validacija, show/hide lozinka toggle, "Zaboravljena lozinka" toast,
+          uspješna prijava → toast → redirect na `/moji-termini` (pravi e2e test), "Registruj se"/
+          "Nemaš nalog?" link na `/registracija` i nazad (`/prijava` link na Registraciji), sve bez
+          console grešaka.
 
 ## 13. Admin (funkcionalno, BEZ UI) — `docs/specifikacija.md` §4.13
 
 - [ ] Salon status enum (`pending`/`active`/`suspended`) postoji i poštuje se u query-jima (salon
       nevidljiv klijentima dok nije `active`) — odobravanje se radi kroz Tinker/SQL, ne UI
+
+## 14. Frontend polish/proširenja (dogovoreno 2026-09-17, čeka "kreni")
+
+Sve niže je frontend-only rad (mock/session-only podaci, isti obrazac kao svugdje u frontend-first
+fazi) — ne backend. Redoslijed: 14.1 → 14.2 → 14.3.
+
+### 14.1 Popust na usluzi (vlasnik) — [x] GOTOVO
+
+- [x] Novi `components/owner/edit-service-modal.tsx` — forma Naziv/Cijena/Trajanje/Buffer + toggle
+      "Popust aktivan" → otkriva "Popust (%)" input, uživo prikaz precrtane stare cijene. Validacija:
+      naziv obavezan, cijena mora biti > 0, popust (kad je uključen) 1–90%
+- [x] **Bug otkriven i popravljen (korisnik uočio odmah nakon prve verzije):** `price` je POGREŠNO
+      tretiran kao već-diskontovana/naplativa cijena (stara cijena se računala UNAZAD dijeljenjem —
+      `price / (1 - popust/100)`), umjesto kao osnovna cijena od koje se popust ODUZIMA (`price * (1 -
+      popust/100)`). Npr. cijena 35 KM + popust 20% treba dati 28 KM klijentu, ne obrnuto. Novi čist
+      helper `getEffectivePrice(price, discountPercent)` u `lib/format.ts` (dokumentovan komentarom da
+      je `Service.price` UVIJEK osnovna cijena, popust se oduzima od nje — nikad obrnuto). Popravljeno
+      svugdje gdje se cijena usluge prikazuje ili sabira: `service-row.tsx` (Salon profil),
+      `booking-wizard.tsx` (lista usluga, sidebar/mobile total), `edit-service-modal.tsx` (preview),
+      `new-appointment-modal.tsx` (select usluge), `saloni/[slug]/page.tsx` (JSON-LD `Offer.price`).
+      **Širi efekat otkriven pri popravci:** `BookingDetails.service` (u `lib/api/bookings.ts`) nije
+      nosio `discountPercent` uopšte, pa su SVI prihod-računi (dashboard mini-statistika, Klijent
+      historija, puna Statistika — `lib/api/statistics.ts`) sabirali sirovu `price` bez popusta,
+      precjenjujući prihod za svaku uslugu s aktivnim popustom. Dodano `discountPercent` u
+      `BookingDetails.service` tip + u `withDetails()` (i u sve ručne booking-snapshot objekte u
+      `dashboard-content.tsx`/`client-history-content.tsx` handleNewBooking funkcijama), i svi
+      prihod-računi (`dashboard-content.tsx`, `client-history-content.tsx`, `statistics-content.tsx`,
+      `lib/api/statistics.ts` — 3 funkcije) i klijentski prikazi cijene (`my-bookings-content.tsx`,
+      dashboard appointment card) sad koriste `getEffectivePrice()`. Provjereno uživo: Sanelin prihod u
+      Klijent historiji ispravno pao sa 105 KM (70+35, pogrešno) na 91 KM (56+35, ispravno) za njena 2
+      obavljena termina u Studio Lux-u
+- [x] `components/owner/dashboard-content.tsx` "Usluge" tab — "Uredi" otvara modal umjesto
+      `flash(t("editServiceToast"))` no-op-a; rezultat ide u novi `serviceOverrides` state
+      (`Record<number, Partial<Service>>`, isti obrazac kao postojeći `overrides`/`canBlockOverrides`),
+      merge-ovan u novi `displayedServices` memo koji se koristi svugdje gdje se ranije koristio
+      sirov `services` prop (i "Usluge" lista i `NewAppointmentModal`/`handleNewBooking`, da izmjena
+      cijene/trajanja odmah utiče i na "Novi termin" tok unutar iste sesije). Dugme "Uredi" sad i
+      `isOwner`-gated (radnik ga ne vidi, isti obrazac kao "Pozovi radnika" u "Radnici" tabu)
+- [x] Isti tab — dodat bedž popusta ("-20%", `Badge variant="warning"`) na red usluge u listi
+- [x] Nove `messages/bs.json` `dashboard.*` stavke za formu (naziv/cijena/trajanje/buffer/popust
+      labele, validacija, toast) — stari neiskorišteni `editServiceToast` uklonjen
+- [x] Testirano desktop+mobile: prepunjena forma, live preview precrtane cijene, validacija (prazan
+      naziv, cijena ≤0), uspješno čuvanje + toast + bedž se pojavljuje u listi. Potvrđeno da je
+      session-only (Salon profil na drugoj stranici i dalje pokazuje originalne mock podatke nakon
+      navigacije — isti obrazac kao svugdje, ne piše u `lib/mock-data/services.json`)
+
+### 14.2 Favorite usluga+radnik + lokacijska pretraga
+
+**Favorite (booking wizard korak 2), `docs/specifikacija.md` §4.3 / `docs/frontend.md`:**
+
+- [ ] `types/entities.ts` — novi `FavoriteServiceWorker` interfejs (id/clientId/salonId/serviceId/
+      workerId/createdAt), tačno prema `docs/database.md`
+- [ ] `lib/mock-data/favorites.json` — seed: Sanela (client 1) favorite radnik Amina Selimović za
+      "Bojenje cijele kose" (id 4) u Studio Lux-u — stvarno odražava njenu postojeću historiju (2
+      termina, oba kod iste radnice), ne izmišljen podatak
+- [ ] `lib/api/favorites.ts` — `getFavoritesForClientSalon()` (async) + čiste helper funkcije
+      `pickFavoriteWorkerId(favorites, serviceId)` i `pickLastUsedWorkerId(bookings, serviceId)`
+- [ ] `lib/api/bookings.ts` — nova `getClientBookingsAtSalon(clientId, salonId)` (svi statusi/datumi,
+      za "zadnje korišteni radnik" upit)
+- [ ] `app/[locale]/(public)/saloni/[slug]/zakazi/page.tsx` — fetch favorites + client bookings
+      (`CURRENT_CLIENT_ID`), proslijediti `BookingWizard`-u
+- [ ] `components/booking/booking-wizard.tsx` korak "Radnik" — 3 stanja: favorite postoji → jedna
+      kartica + "Promijeni" (otvara punu listu, fallback na stanje 1/2); nema favorite-a ali ima
+      historije → puna lista sa zadnje korištenim pred-selektovanim (soft, promjenjivo); nema
+      historije → puna lista, ništa pred-selektovano (postojeće ponašanje)
+- [ ] Isti fajl, "Hvala" ekran — checkbox "Sačuvaj kao omiljeno" (samo kad je konkretan radnik biran,
+      ne "Bilo koji radnik", i još nije favorite) → session-only React state (ne piše u
+      `favorites.json`) — testirati da "Zakaži još jedan termin" pa ista usluga odmah pokazuje
+      stanje 3, jer komponenta ostaje mounted (ne remount/navigacija)
+
+**Lokacijska pretraga "blizu mene", `docs/specifikacija.md` §4.7 / `docs/frontend.md`:**
+
+- [ ] `lib/geo.ts` (novo) — čista `haversineKm(lat1,lng1,lat2,lng2)` funkcija
+- [ ] `lib/hooks/use-geolocation.ts` (novo) — wrapper oko `navigator.geolocation`, stanja
+      idle/loading/granted/denied/unavailable
+- [ ] `lib/api/salons.ts` — `SalonSort` dobija `"distance"`; nova `attachDistances(salons, coords)`
+      helper (koristi `Salon.latitude`/`longitude`, već popunjeni u `salons.json` za svih 8 salona —
+      "geocoding" korak već postoji na nivou mock podataka)
+- [ ] `lib/format.ts` — `formatDistance(km)` helper (isti obrazac kao `formatPrice`)
+- [ ] `components/discovery/salon-card.tsx` — prikaz "X km" bedža kad `salon.distanceKm` postoji
+      (polje već postoji u `types/entities.ts`, nikad popunjeno/prikazano do sad)
+- [ ] `components/discovery/search-content.tsx` — nov filter chip "Blizu mene": prvi klik pokazuje
+      kratko objašnjenje PRIJE browser prompta, zatim traži lokaciju; uspjeh → sort se automatski
+      postavlja na "Najbliže" (nova opcija u Sort select-u) + km na karticama; odbijanje/nedostupno →
+      tiho vraća prethodno stanje, bez greške (frontend.md: "korisnik ne smije osjetiti da je nešto
+      pošlo po zlu")
+- [ ] Home page (`components/home/home-content.tsx` + `app/[locale]/(public)/page.tsx`) — nova
+      "Najbliže tebi" sekcija (prijevodi `nearbyEyebrow`/`nearbyTitle`/`nearbyLocationPrompt` već
+      postoje u `messages/bs.json` od ranije, nikad iskorišteni), ista geolocation logika, potpuno
+      nestaje (ne prazno stanje/greška) ako korisnik odbije — dizajn (`Home page.dc.html`) nema ovu
+      sekciju uopšte, gradi se iz postojećeg `SalonCard`-a kao što je ranija sesija predložila
+
+### 14.3 Rola se ne prenosi između dashboard stranica — [x] GOTOVO
+
+- [x] `app/[locale]/(owner)/dashboard/page.tsx` — čita `role` search param (`?role=owner|worker`),
+      proslijeđuje kao `initialRole` prop (default `"owner"` za bilo koju drugu/nepostojeću vrijednost)
+- [x] `components/owner/dashboard-content.tsx` — `Role`/`Page` tipovi sad `export`-ovani; prihvata
+      `initialRole` prop umjesto uvijek `useState<Role>("owner")`; novi `selectRole(r)` helper
+      (koristi `useRouter`/`usePathname` iz `@/i18n/navigation` + `useSearchParams` iz
+      `next/navigation`) postavlja i lokalni state i URL (`router.replace`, `scroll:false`, čuva
+      postojeći `?tab=` parametar); klik na Vlasnik/Radnik toggle sad zove `selectRole` umjesto
+      `setRole`; "Historija" linkovi u "Klijenti" tabu nose trenutnu rolu
+      (`/dashboard/klijenti/{ime}?role=${role}`)
+- [x] `app/[locale]/(owner)/dashboard/klijenti/[ime]/page.tsx` — isto, čita `role` search param,
+      proslijeđuje kao `initialRole`
+- [x] `components/owner/client-history-content.tsx` — `Role` tip `export`-ovan; prihvata
+      `initialRole`; isti `selectRole` obrazac; "Klijenti" back-link i svih 6 sidebar/mobile NAV
+      linkova ka `/dashboard` (Kalendar/Zahtjevi/Klijenti/Usluge/Radnici/Radno vrijeme) sad nose
+      `&role=${role}` — "Statistika" link namjerno izuzet (ta stranica nema koncept role-a)
+- [x] Testirano desktop+mobile, pun krug: Vlasnik→Radnik toggle na `/dashboard` mijenja URL na
+      `?role=worker`, "Historija" link nosi rolu, `/dashboard/klijenti/[ime]` učitan u Radnik pogledu
+      (sidebar "Lejla Hadžić", "Predloži blokadu" umjesto "Blokiraj klijenta", ownerOnly nav stavke
+      sakrivene) — nazad na Klijenti isto zadržava `role=worker`. Direktna navigacija na URL s
+      `?role=worker` odmah učitava ispravan pogled (server-side inicijalizacija radi, ne samo
+      client-side toggle). Bez console grešaka
 
 ## Napomena o obimu / redoslijedu
 

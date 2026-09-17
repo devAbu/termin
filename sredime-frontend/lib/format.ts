@@ -19,6 +19,20 @@ export function formatPrice(amount: string | number, currency = "KM"): string {
   return `${formatted} ${currency}`;
 }
 
+/**
+ * `Service.price` is always the base/original price (docs/database.md). A discount
+ * is subtracted FROM it — it never means "price is already discounted" (e.g. 35 KM
+ * + 20% popust = 28 KM klijentu, not 35 KM already being the discounted amount).
+ * Use this everywhere a booking/service amount is charged, summed, or displayed as
+ * "what the client pays" — never read `.price` directly when `discountPercent` is
+ * also in scope.
+ */
+export function getEffectivePrice(price: string | number, discountPercent?: number | null): number {
+  const base = typeof price === "string" ? Number(price) : price;
+  if (!discountPercent) return base;
+  return base * (1 - discountPercent / 100);
+}
+
 /** Bosnian 3-way plural: 1 → one, 2–4 → few, 0/5+ → many (e.g. "posjeta"/"posjete"/"posjeta"). */
 export function pluralBs(count: number, one: string, few: string, many: string): string {
   return count === 1 ? one : count >= 2 && count <= 4 ? few : many;

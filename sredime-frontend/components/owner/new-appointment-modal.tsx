@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatWeekdayShort } from "@/lib/format";
+import { formatPrice, formatWeekdayShort, getEffectivePrice } from "@/lib/format";
 import { hoursForDate } from "@/lib/api/availability";
 import type { BookingDetails, SalonClientSummary } from "@/lib/api/bookings";
 import type { Salon, Service, Worker } from "@/types/entities";
@@ -194,7 +194,7 @@ export function NewAppointmentModal({
             >
               {services.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} · {s.durationMinutes} min · {formatPrice(s.price)}
+                  {s.name} · {s.durationMinutes} min · {formatPrice(getEffectivePrice(s.price, s.discountPercent))}
                 </option>
               ))}
             </Select>

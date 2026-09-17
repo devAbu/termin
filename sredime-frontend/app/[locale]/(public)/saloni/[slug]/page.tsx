@@ -6,6 +6,7 @@ import { getWorkersBySalon } from "@/lib/api/workers";
 import { getServicesBySalon } from "@/lib/api/services";
 import { getReviewsBySalon } from "@/lib/api/reviews";
 import { CATEGORY_META } from "@/lib/constants/categories";
+import { getEffectivePrice } from "@/lib/format";
 
 export async function generateMetadata({
   params,
@@ -61,7 +62,7 @@ export default async function SalonProfilePage({
     makesOffer: services.map((s) => ({
       "@type": "Offer",
       name: s.name,
-      price: s.price,
+      price: getEffectivePrice(s.price, s.discountPercent).toFixed(2),
       priceCurrency: s.currency,
     })),
   };

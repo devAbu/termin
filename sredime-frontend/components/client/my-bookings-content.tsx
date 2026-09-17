@@ -23,7 +23,7 @@ import { Badge, type badgeVariants } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatWeekdayShort, formatMonthShort } from "@/lib/format";
+import { formatPrice, formatWeekdayShort, formatMonthShort, getEffectivePrice } from "@/lib/format";
 import type { BookingDetails } from "@/lib/api/bookings";
 import type { BookingStatus } from "@/types/entities";
 import type { VariantProps } from "class-variance-authority";
@@ -212,7 +212,7 @@ export function MyBookingsContent({
                       <div className="flex flex-col items-start gap-2.5 md:items-end">
                         <span className="flex flex-col items-start md:items-end">
                           <span className="text-2xs text-text-muted">{t("priceLabel")}</span>
-                          <span className="price text-lg">{formatPrice(b.service.price)}</span>
+                          <span className="price text-lg">{formatPrice(getEffectivePrice(b.service.price, b.service.discountPercent))}</span>
                         </span>
                         <div className="flex flex-wrap gap-2 md:justify-end">
                           <Button asChild variant="secondary" size="sm">
@@ -281,7 +281,7 @@ export function MyBookingsContent({
                       <Badge variant={STATUS_TONE[h.status]}>{tStatus(h.status)}</Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-2.5 md:justify-end">
-                      <span className="price text-base">{formatPrice(h.service.price)}</span>
+                      <span className="price text-base">{formatPrice(getEffectivePrice(h.service.price, h.service.discountPercent))}</span>
                       {h.status === "completed" && (
                         <Button asChild variant="secondary" size="sm">
                           <Link href={`/moji-termini/${h.id}/recenzija`}>

@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatMonthShort } from "@/lib/format";
+import { formatPrice, formatMonthShort, getEffectivePrice } from "@/lib/format";
 import type { BookingDetails } from "@/lib/api/bookings";
 import {
   getStatsRange,
@@ -86,8 +86,8 @@ export function StatisticsContent({
 
   const completed = filtered.filter((b) => b.status === "completed");
   const prevCompleted = prevFiltered.filter((b) => b.status === "completed");
-  const revenue = completed.reduce((sum, b) => sum + Number(b.service.price), 0);
-  const prevRevenue = prevCompleted.reduce((sum, b) => sum + Number(b.service.price), 0);
+  const revenue = completed.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
+  const prevRevenue = prevCompleted.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
   const avg = completed.length ? revenue / completed.length : 0;
   const prevAvg = prevCompleted.length ? prevRevenue / prevCompleted.length : 0;
 

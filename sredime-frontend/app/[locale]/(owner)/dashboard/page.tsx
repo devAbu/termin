@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DashboardContent, type Page } from "@/components/owner/dashboard-content";
+import { DashboardContent, type Page, type Role } from "@/components/owner/dashboard-content";
 import { getSalonById } from "@/lib/api/salons";
 import { getWorkersBySalon } from "@/lib/api/workers";
 import { getServicesBySalon } from "@/lib/api/services";
@@ -15,9 +15,9 @@ const VALID_TABS: Page[] = ["kalendar", "zahtjevi", "klijenti", "usluge", "radni
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; role?: string }>;
 }) {
-  const { tab } = await searchParams;
+  const { tab, role } = await searchParams;
   const salon = await getSalonById(CURRENT_SALON_ID);
   if (!salon) notFound();
 
@@ -28,6 +28,16 @@ export default async function DashboardPage({
   ]);
 
   const initialPage = VALID_TABS.includes(tab as Page) ? (tab as Page) : "kalendar";
+  const initialRole: Role = role === "worker" ? "worker" : "owner";
 
-  return <DashboardContent salon={salon} workers={workers} services={services} bookings={bookings} initialPage={initialPage} />;
+  return (
+    <DashboardContent
+      salon={salon}
+      workers={workers}
+      services={services}
+      bookings={bookings}
+      initialPage={initialPage}
+      initialRole={initialRole}
+    />
+  );
 }

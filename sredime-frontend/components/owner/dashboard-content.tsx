@@ -13,8 +13,12 @@ import {
   CircleX,
   Clock,
   Inbox,
+  Info,
+  Mail,
+  Pencil,
   Plus,
   Repeat,
+  Store,
   Tag,
   TriangleAlert,
   UserPlus,
@@ -22,12 +26,13 @@ import {
   Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge, type badgeVariants } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatDayLabel, formatWeekdayShort, pluralBs } from "@/lib/format";
+import { formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice, pluralBs } from "@/lib/format";
 import { hoursForDate } from "@/lib/api/availability";
 import {
   pickBookingsForDate,
@@ -36,12 +41,43 @@ import {
   type BookingDetails,
 } from "@/lib/api/bookings";
 import { NewAppointmentModal, type NewBookingInput } from "@/components/owner/new-appointment-modal";
+import { InviteWorkerModal, type InvitePayload } from "@/components/owner/invite-worker-modal";
+import { EditServiceModal } from "@/components/owner/edit-service-modal";
 import type { Salon, Service, Worker, BookingStatus } from "@/types/entities";
 import type { VariantProps } from "class-variance-authority";
 
 export type Page = "kalendar" | "zahtjevi" | "klijenti" | "usluge" | "radnici" | "vrijeme" | "statistika";
-type Role = "owner" | "worker";
+export type Role = "owner" | "worker";
 type BadgeTone = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
+
+type TeamStatus = "owner" | "active" | "invited" | "draft";
+interface TeamMember {
+  id: number;
+  name: string;
+  role: string;
+  contact: string;
+  status: TeamStatus;
+  workerId?: number;
+}
+
+const OWNER_MEMBER: TeamMember = { id: -1, name: "Selma Hodžić", role: "Vlasnica salona", contact: "selma@studiolux.ba", status: "owner" };
+
+const TEAM_BADGE: Record<TeamStatus, { tone: BadgeTone; icon: typeof Store; labelKey: string }> = {
+  owner: { tone: "info", icon: Store, labelKey: "badgeOwner" },
+  active: { tone: "success", icon: CircleCheck, labelKey: "badgeActive" },
+  invited: { tone: "warning", icon: Mail, labelKey: "badgeInvited" },
+  draft: { tone: "neutral", icon: Info, labelKey: "badgeDraft" },
+};
+
+function initialsOf(name: string) {
+  return name.split(" ").map((p) => p[0]).join("").slice(0, 2);
+}
+
+function contactFor(name: string, salon: Salon) {
+  const first = name.split(" ")[0].toLowerCase();
+  const domain = salon.name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return `${first}@${domain}.ba`;
+}
 
 const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
   pending: "warning",
@@ -85,18 +121,24 @@ export function DashboardContent({
   services,
   bookings,
   initialPage = "kalendar",
+  initialRole = "owner",
 }: {
   salon: Salon;
   workers: Worker[];
   services: Service[];
   bookings: BookingDetails[];
   initialPage?: Page;
+  initialRole?: Role;
 }) {
   const t = useTranslations("dashboard");
   const tStatus = useTranslations("bookingStatus");
   const tClient = useTranslations("clientHistory");
+  const tInvite = useTranslations("workerInvite");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const [role, setRole] = useState<Role>("owner");
+  const [role, setRole] = useState<Role>(initialRole);
   const [page, setPage] = useState<Page>(initialPage);
   const [dayOffset, setDayOffset] = useState(0);
   const [staffFilter, setStaffFilter] = useState<number | "all">("all");
@@ -104,14 +146,28 @@ export function DashboardContent({
   const [extra, setExtra] = useState<BookingDetails[]>([]);
   const [canBlockOverrides, setCanBlockOverrides] = useState<Record<number, boolean>>({});
   const [hoursClosed, setHoursClosed] = useState<Record<number, boolean>>({});
+  const [serviceOverrides, setServiceOverrides] = useState<Record<number, Partial<Service>>>({});
+  const [editServiceModal, setEditServiceModal] = useState<Service | null>(null);
   const [actionModal, setActionModal] = useState<{ type: "move" | "cancel" | "noshow"; bookingId: number } | null>(null);
   const [newApptOpen, setNewApptOpen] = useState(false);
+  const [team, setTeam] = useState<TeamMember[]>(() => [
+    OWNER_MEMBER,
+    ...workers.map((w) => ({ id: w.id, name: w.name, role: w.position, contact: contactFor(w.name, salon), status: "active" as const, workerId: w.id })),
+  ]);
+  const [inviteModal, setInviteModal] = useState<{ mode: "new" } | { mode: "resend"; member: TeamMember } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [now] = useState(() => new Date());
 
   function flash(msg: string) {
     setToast(msg);
     setTimeout(() => setToast((cur) => (cur === msg ? null : cur)), 2600);
+  }
+
+  function selectRole(r: Role) {
+    setRole(r);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("role", r);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
   const isOwner = role === "owner";
@@ -122,6 +178,17 @@ export function DashboardContent({
   }, [bookings, overrides, extra]);
 
   const clients = useMemo(() => summarizeClients(allBookings), [allBookings]);
+
+  const displayedServices = useMemo(
+    () => services.map((s) => (serviceOverrides[s.id] ? { ...s, ...serviceOverrides[s.id] } : s)),
+    [services, serviceOverrides],
+  );
+
+  function handleServiceSave(id: number, changes: Partial<Service>) {
+    setServiceOverrides((cur) => ({ ...cur, [id]: { ...cur[id], ...changes } }));
+    setEditServiceModal(null);
+    flash(t("serviceUpdatedToast", { name: changes.name ?? "" }));
+  }
 
   const days = useMemo(() => {
     const base = startOfDay(new Date());
@@ -213,7 +280,7 @@ export function DashboardContent({
             {b.manuallyEntered && <Badge variant="info">{t("manualBadge")}</Badge>}
           </div>
           <span className="text-sm text-text-secondary">
-            {b.service.name} · {b.worker.name} · {formatPrice(b.service.price)}
+            {b.service.name} · {b.worker.name} · {formatPrice(getEffectivePrice(b.service.price, b.service.discountPercent))}
           </span>
           {clients.find((c) => c.name === b.clientName)?.noShowCount ? (
             <span className="inline-flex items-center gap-1.5 text-xs text-warning-fg">
@@ -275,7 +342,7 @@ export function DashboardContent({
     const [h, m] = input.time.split(":").map(Number);
     iso.setHours(h, m, 0, 0);
     const isoStr = `${iso.getFullYear()}-${String(iso.getMonth() + 1).padStart(2, "0")}-${String(iso.getDate()).padStart(2, "0")}T${input.time}:00`;
-    const service = services.find((s) => s.id === input.serviceId)!;
+    const service = displayedServices.find((s) => s.id === input.serviceId)!;
     const worker = workers.find((w) => w.id === input.workerId)!;
     const booking: BookingDetails = {
       id: nextLocalId++,
@@ -286,13 +353,26 @@ export function DashboardContent({
       scheduledAt: isoStr,
       manuallyEntered: true,
       salon: { id: salon.id, name: salon.name, slug: salon.slug, address: salon.address },
-      service: { id: service.id, name: service.name, durationMinutes: service.durationMinutes, bufferMinutes: service.bufferMinutes, price: service.price },
+      service: { id: service.id, name: service.name, durationMinutes: service.durationMinutes, bufferMinutes: service.bufferMinutes, price: service.price, discountPercent: service.discountPercent },
       worker: { id: worker.id, name: worker.name },
     };
     setExtra((cur) => [...cur, booking]);
     setNewApptOpen(false);
     flash(t("addedToast", { who: input.clientName, when: `${input.date.getDate()}.${input.date.getMonth() + 1}., ${input.time}` }));
   }
+
+  function handleInviteSent(payload: InvitePayload) {
+    if (inviteModal?.mode === "resend") {
+      const targetId = inviteModal.member.id;
+      setTeam((cur) => cur.map((m) => (m.id === targetId ? { ...m, contact: payload.contact || m.contact, status: "invited" } : m)));
+      flash(tInvite("resentToast", { contact: payload.contact || inviteModal.member.contact }));
+    } else {
+      setTeam((cur) => [...cur, { id: nextLocalId++, name: payload.name, role: payload.role, contact: payload.contact, status: "invited" }]);
+      flash(tInvite("sentToast", { contact: payload.contact }));
+    }
+  }
+
+  const pendingInvites = team.filter((m) => m.status === "invited").length;
 
   return (
     <div className="flex min-h-full bg-surface-canvas">
@@ -334,7 +414,7 @@ export function DashboardContent({
                 key={r}
                 type="button"
                 onClick={() => {
-                  setRole(r);
+                  selectRole(r);
                   if (r === "worker" && page === "statistika") setPage("kalendar");
                 }}
                 className={cn(
@@ -485,7 +565,7 @@ export function DashboardContent({
                   </div>
                   <div className="flex gap-2">
                     <Button type="button" variant="secondary" size="sm" asChild>
-                      <Link href={`/dashboard/klijenti/${encodeURIComponent(c.name)}`}>
+                      <Link href={`/dashboard/klijenti/${encodeURIComponent(c.name)}?role=${role}`}>
                         {tClient("viewHistory")}
                         <Icon icon={ChevronRight} size={13} />
                       </Link>
@@ -507,19 +587,32 @@ export function DashboardContent({
 
           {page === "usluge" && (
             <div className="flex flex-col divide-y divide-border-subtle rounded-card bg-card shadow-card">
-              {services.map((s) => (
+              {displayedServices.map((s) => (
                 <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
                   <div className="flex flex-col gap-0.5">
-                    <span className="font-bold text-text-primary">{s.name}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-bold text-text-primary">{s.name}</span>
+                      {s.discountPercent != null && (
+                        <Badge variant="warning">{t("discountBadge", { percent: s.discountPercent })}</Badge>
+                      )}
+                    </div>
                     <span className="text-sm text-text-secondary">
                       {t("durationLabel", { dur: s.durationMinutes })} · {t("bufferLabel", { buffer: s.bufferMinutes })}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="price text-base">{formatPrice(s.price)}</span>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => flash(t("editServiceToast"))}>
-                      {t("editService")}
-                    </Button>
+                    <div className="flex flex-col items-end">
+                      {s.discountPercent != null && (
+                        <span className="text-xs text-text-muted line-through">{formatPrice(s.price)}</span>
+                      )}
+                      <span className="price text-base">{formatPrice(getEffectivePrice(s.price, s.discountPercent))}</span>
+                    </div>
+                    {isOwner && (
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setEditServiceModal(s)}>
+                        <Icon icon={Pencil} size={13} />
+                        {t("editService")}
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -527,44 +620,78 @@ export function DashboardContent({
           )}
 
           {page === "radnici" && (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
-              {workers.map((w) => {
-                const on = canBlockOverrides[w.id] ?? w.canBlockClients;
-                return (
-                  <div key={w.id} className="flex flex-col gap-3 rounded-card bg-card p-4 shadow-card">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-400">
-                        {w.name.split(" ").map((p) => p[0]).join("")}
-                      </span>
-                      <div className="flex min-w-0 flex-col">
-                        <span className="font-bold text-text-primary">{w.name}</span>
-                        <span className="text-sm text-text-secondary">{w.position}</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => isOwner && setCanBlockOverrides((cur) => ({ ...cur, [w.id]: !on }))}
-                      className={cn(
-                        "self-start rounded-pill px-3 py-1.5 text-xs font-semibold",
-                        on ? "bg-brand-subtle text-brand" : "border border-border-subtle bg-card text-text-secondary",
-                        !isOwner && "opacity-70",
-                      )}
-                    >
-                      {on ? t("canBlockOn") : t("canBlockOff")}
-                    </button>
+            <div className="flex flex-col gap-5">
+              <div className="flex items-start gap-2.5 rounded-control bg-brand-subtle px-4 py-3.5">
+                <Icon icon={Info} size={16} className="mt-0.5 flex-none text-brand" />
+                <span className="text-sm leading-relaxed text-text-secondary">{tInvite("infoBanner")}</span>
+              </div>
+
+              <div className="overflow-hidden rounded-card bg-card shadow-card">
+                <div className="flex flex-wrap items-center justify-between gap-3 p-4 shadow-inset-line">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <span className="text-base font-bold text-text-primary">{tInvite("teamTitle")}</span>
+                    <span className="text-sm text-text-muted">
+                      {tInvite("teamMeta", {
+                        count: team.length,
+                        word: pluralBs(team.length, tInvite("peopleOne"), tInvite("peopleFew"), tInvite("peopleMany")),
+                        pending: pendingInvites,
+                      })}
+                    </span>
                   </div>
-                );
-              })}
-              {isOwner && (
-                <button
-                  type="button"
-                  onClick={() => flash(t("inviteToast"))}
-                  className="flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border-subtle p-4 text-sm font-medium text-brand"
-                >
-                  <Icon icon={UserPlus} size={20} />
-                  {t("inviteWorker")}
-                </button>
-              )}
+                  {isOwner && (
+                    <Button type="button" size="sm" onClick={() => setInviteModal({ mode: "new" })}>
+                      <Icon icon={UserPlus} size={15} />
+                      {t("inviteWorker")}
+                    </Button>
+                  )}
+                </div>
+                <div className="flex flex-col divide-y divide-border-subtle">
+                  {team.map((m) => {
+                    const badge = TEAM_BADGE[m.status];
+                    const canBlockOn = m.workerId != null ? (canBlockOverrides[m.workerId] ?? workers.find((w) => w.id === m.workerId)?.canBlockClients) : undefined;
+                    return (
+                      <div
+                        key={m.id}
+                        className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2.5 p-4 sm:grid-cols-[44px_minmax(0,1fr)_auto_auto] sm:gap-3.5"
+                      >
+                        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-brand-subtle text-sm font-bold text-brand">
+                          {initialsOf(m.name)}
+                        </span>
+                        <span className="flex min-w-0 flex-col gap-0.5">
+                          <span className="font-bold text-text-primary">{m.name}</span>
+                          <span className="truncate text-sm text-text-secondary">
+                            {m.role} · {m.contact}
+                          </span>
+                        </span>
+                        <Badge variant={badge.tone} className="w-fit">
+                          <Icon icon={badge.icon} size={11} />
+                          {tInvite(badge.labelKey)}
+                        </Badge>
+                        <span className="col-span-2 flex flex-wrap gap-2 sm:col-span-1 sm:justify-end">
+                          {m.workerId != null && isOwner && (
+                            <button
+                              type="button"
+                              onClick={() => setCanBlockOverrides((cur) => ({ ...cur, [m.workerId!]: !canBlockOn }))}
+                              className={cn(
+                                "h-9 rounded-control px-3 text-xs font-semibold",
+                                canBlockOn ? "bg-brand-subtle text-brand" : "border border-border-subtle bg-card text-text-secondary",
+                              )}
+                            >
+                              {canBlockOn ? t("canBlockOn") : t("canBlockOff")}
+                            </button>
+                          )}
+                          {(m.status === "invited" || m.status === "draft") && isOwner && (
+                            <Button type="button" variant="secondary" size="sm" onClick={() => setInviteModal({ mode: "resend", member: m })}>
+                              <Icon icon={m.status === "invited" ? Repeat : UserPlus} size={14} />
+                              {m.status === "invited" ? tInvite("resendCta") : tInvite("sendCta")}
+                            </Button>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
@@ -602,7 +729,11 @@ export function DashboardContent({
                   { label: t("statsNoShowLabel"), value: String(allBookings.filter((b) => b.status === "no_show").length) },
                   {
                     label: t("statsRevenueLabel"),
-                    value: formatPrice(allBookings.filter((b) => b.status === "completed").reduce((sum, b) => sum + Number(b.service.price), 0)),
+                    value: formatPrice(
+                      allBookings
+                        .filter((b) => b.status === "completed")
+                        .reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0),
+                    ),
                   },
                 ].map((kpi) => (
                   <div key={kpi.label} className="flex flex-col gap-1 rounded-card bg-card p-4 shadow-card">
@@ -635,16 +766,31 @@ export function DashboardContent({
         </main>
       </div>
 
+      {inviteModal && (
+        <InviteWorkerModal
+          mode={inviteModal.mode}
+          initialName={inviteModal.mode === "resend" ? inviteModal.member.name : undefined}
+          initialContact={inviteModal.mode === "resend" ? inviteModal.member.contact : undefined}
+          initialRole={inviteModal.mode === "resend" ? inviteModal.member.role : undefined}
+          onClose={() => setInviteModal(null)}
+          onSent={handleInviteSent}
+        />
+      )}
+
       {newApptOpen && (
         <NewAppointmentModal
           salon={salon}
           workers={workers}
-          services={services}
+          services={displayedServices}
           clients={clients}
           existingBookings={allBookings}
           onClose={() => setNewApptOpen(false)}
           onSave={handleNewBooking}
         />
+      )}
+
+      {editServiceModal && (
+        <EditServiceModal service={editServiceModal} onClose={() => setEditServiceModal(null)} onSave={handleServiceSave} />
       )}
 
       {actionModal && modalBooking && (

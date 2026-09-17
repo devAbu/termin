@@ -1,7 +1,7 @@
 import type { Salon, Worker } from "@/types/entities";
 import type { BookingDetails } from "@/lib/api/bookings";
 import { hoursForDate } from "@/lib/api/availability";
-import { formatWeekdayShort } from "@/lib/format";
+import { formatWeekdayShort, getEffectivePrice } from "@/lib/format";
 
 export type StatsPeriod = "today" | "week" | "month" | "custom";
 
@@ -73,7 +73,11 @@ export function filterBookingsInRange(bookings: BookingDetails[], range: DateRan
 
 function bucketBar(label: string, bookings: BookingDetails[], start: Date, end: Date): StatsBar {
   const completed = bookings.filter((b) => b.status === "completed" && inRange(b.scheduledAt, start, end));
-  return { label, revenue: completed.reduce((sum, b) => sum + Number(b.service.price), 0), completedCount: completed.length };
+  return {
+    label,
+    revenue: completed.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0),
+    completedCount: completed.length,
+  };
 }
 
 /** Revenue-per-bucket bars: hourly for a same-day range, daily up to 14 days, weekly beyond that. */
@@ -142,7 +146,7 @@ export function topServicesByCount(bookings: BookingDetails[], limit = 5): Servi
     if (b.status !== "completed") continue;
     const cur = byName.get(b.service.name) ?? { name: b.service.name, count: 0, revenue: 0 };
     cur.count += 1;
-    cur.revenue += Number(b.service.price);
+    cur.revenue += getEffectivePrice(b.service.price, b.service.discountPercent);
     byName.set(b.service.name, cur);
   }
   return Array.from(byName.values())
@@ -183,7 +187,7 @@ export function staffStatsRows(bookings: BookingDetails[], workers: Worker[], sa
   return workers.map((w) => {
     const forWorker = bookings.filter((b) => b.worker.id === w.id);
     const completed = forWorker.filter((b) => b.status === "completed");
-    const revenue = completed.reduce((sum, b) => sum + Number(b.service.price), 0);
+    const revenue = completed.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
     const busy = busyMinutes(forWorker);
     return {
       workerId: w.id,

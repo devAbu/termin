@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ClientHistoryContent } from "@/components/owner/client-history-content";
+import { ClientHistoryContent, type Role } from "@/components/owner/client-history-content";
 import { getSalonById } from "@/lib/api/salons";
 import { getWorkersBySalon } from "@/lib/api/workers";
 import { getServicesBySalon } from "@/lib/api/services";
@@ -18,10 +18,13 @@ export async function generateMetadata({
 
 export default async function ClientHistoryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ ime: string }>;
+  searchParams: Promise<{ role?: string }>;
 }) {
   const { ime } = await params;
+  const { role } = await searchParams;
   const clientName = decodeURIComponent(ime);
 
   const salon = await getSalonById(CURRENT_SALON_ID);
@@ -37,6 +40,8 @@ export default async function ClientHistoryPage({
   const clientBookings = getClientBookingsForSalon(allSalonBookings, clientName);
   if (clientBookings.length === 0) notFound();
 
+  const initialRole: Role = role === "worker" ? "worker" : "owner";
+
   return (
     <ClientHistoryContent
       salon={salon}
@@ -48,6 +53,7 @@ export default async function ClientHistoryPage({
       allSalonBookings={allSalonBookings}
       initialNotes={notes}
       pendingCount={pickPendingBookings(allSalonBookings).length}
+      initialRole={initialRole}
     />
   );
 }

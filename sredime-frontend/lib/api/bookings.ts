@@ -42,7 +42,7 @@ export interface BookingDetails {
   scheduledAt: string;
   manuallyEntered: boolean;
   salon: { id: number; name: string; slug: string; address: string };
-  service: { id: number; name: string; durationMinutes: number; bufferMinutes: number; price: string };
+  service: { id: number; name: string; durationMinutes: number; bufferMinutes: number; price: string; discountPercent: number | null };
   worker: { id: number; name: string };
 }
 
@@ -66,7 +66,7 @@ async function withDetails(b: RawBooking): Promise<BookingDetails | null> {
     scheduledAt: b.scheduledAt,
     manuallyEntered: b.manuallyEntered,
     salon: { id: salon.id, name: salon.name, slug: salon.slug, address: salon.address },
-    service: { id: service.id, name: service.name, durationMinutes: service.durationMinutes, bufferMinutes: service.bufferMinutes, price: service.price },
+    service: { id: service.id, name: service.name, durationMinutes: service.durationMinutes, bufferMinutes: service.bufferMinutes, price: service.price, discountPercent: service.discountPercent },
     worker: { id: worker.id, name: worker.name },
   };
 }

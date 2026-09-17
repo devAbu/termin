@@ -1,13 +1,12 @@
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, getEffectivePrice } from "@/lib/format";
 import type { Service } from "@/types/entities";
 
 export function ServiceRow({ service, onBook }: { service: Service; onBook: () => void }) {
   const t = useTranslations("salon");
-  const oldPrice = service.discountPercent
-    ? Number(service.price) / (1 - service.discountPercent / 100)
-    : null;
+  const finalPrice = getEffectivePrice(service.price, service.discountPercent);
+  const hasDiscount = service.discountPercent != null;
 
   return (
     <div className="flex items-center justify-between gap-4 py-3.5">
@@ -17,10 +16,10 @@ export function ServiceRow({ service, onBook }: { service: Service; onBook: () =
       </div>
       <div className="flex flex-none items-center gap-3">
         <div className="flex flex-col items-end">
-          {oldPrice && (
-            <span className="text-xs text-text-muted line-through">{formatPrice(oldPrice)}</span>
+          {hasDiscount && (
+            <span className="text-xs text-text-muted line-through">{formatPrice(service.price)}</span>
           )}
-          <span className="price text-base">{formatPrice(service.price)}</span>
+          <span className="price text-base">{formatPrice(finalPrice)}</span>
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={onBook}>
           {t("bookCta")}
