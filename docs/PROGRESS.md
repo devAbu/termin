@@ -3,26 +3,30 @@
 **OBAVEZNO PRVO ČITANJE na početku svake sesije** (vidi `docs/CLAUDE.md`). Statusi: `[ ]` nije počeo,
 `[~]` u toku, `[x]` gotovo. Ažurirati odmah nakon svakog završenog zadatka, ne čekati kraj sesije.
 
-## Sljedeći koraci (kraj sesije 2026-09-17, četrnaesti krug)
+## Sljedeći koraci (kraj sesije 2026-09-18, petnaesti krug)
 
-**SVIH 15 `.dc.html` EKRANA JE GOTOVO** (od "Prijava" nadalje, vidi §12 za puni detalj svakog).
-Fokus sesije se sad pomjera na **frontend polish/proširenja** dok je backend i dalje PAUZIRAN (§0) —
+**SVIH 15 `.dc.html` EKRANA JE GOTOVO** (vidi §12) I **SVE 3 DOGOVORENE FRONTEND POLISH STAVKE IZ §14
+SU GOTOVE.** Fokus sesije bio je frontend polish/proširenja dok je backend i dalje PAUZIRAN (§0) —
 korisnikova eksplicitna odluka: "posto nam su nam backend, baza, auth i to trenutno manje bitno...sad
-nam je fokus na FRONT (UI/UX)". Dogovorene 3 stavke, pun detalj u **§14** ispod. **14.1 i 14.3 su
-gotovi, 14.2 (favorite + lokacijska pretraga) je namjerno ODGOĐEN za kasnije** — korisnikova odluka,
-najveća/najskuplja stavka od sve tri (najviše tokena), ostaje `[ ]` dok se eksplicitno ne zatraži:
+nam je fokus na FRONT (UI/UX)". Pun detalj svake stavke u **§14** ispod:
 
 1. [x] Popust na usluzi — prava forma za uređivanje usluge u dashboard "Usluge" tabu +
    `discount_percent` toggle. Usput otkriven i popravljen ŠIRI bug: popust se računao u pogrešnom
    smjeru (`price` tretiran kao već-diskontovana cijena) kroz CIJELU aplikaciju, uklj. sve
    prihod-računice u Statistici/Klijent historiji — vidi §14.1 za pun detalj
-2. [ ] **ODGOĐENO** — Favorite usluga+radnik (booking wizard korak 2, sva 3 stanja iz
-   `docs/frontend.md`) + lokacijska pretraga "blizu mene" (`docs/specifikacija.md` §4.3/§4.7)
+2. [x] Favorite usluga+radnik (booking wizard korak 2, sva 3 stanja iz `docs/frontend.md`) +
+   lokacijska pretraga "blizu mene" na Pretraga i Home page (`docs/specifikacija.md` §4.3/§4.7) —
+   vidi §14.2 za pun detalj. Ovo je bila najveća/najskuplja stavka, prvobitno odgođena pa naknadno
+   urađena istu sesiju
 3. [x] Rola (Vlasnik/Radnik) se nije prenosila kroz URL između `/dashboard` i
    `/dashboard/klijenti/[ime]` — popravljeno preko `?role=` search parametra, isti obrazac kao
    postojeći `?tab=`. (Nije bio bug koji je korisnik prvobitno sumnjao — taj originalni scenario
    "radnik blokira sebe" nije reprodukovan i korisnik ga je odbacio; ovo je bio NOVI, stvarno nađen,
    manji problem otkriven pri uživo testiranju.)
+
+**Nema više dogovorenih frontend stavki na čekanju** — `npx tsc --noEmit` čist (0 grešaka) na kraju
+sesije. Sljedeći korak je ili nova frontend stavka (korisnikov zahtjev) ili nastavak backend faze
+(§0 PAUZIRAN dok se eksplicitno ne zatraži, počinje se od §1).
 
 **Šta ostaje van V1 frontend obima** (nije "ekran" iz liste od 15, nego stvarni backend/funkcionalni
 rad): pravi auth (Sanctum token, sesija, Navbar "ulogovan" state), migracije/modeli, booking engine
@@ -742,51 +746,95 @@ fazi) — ne backend. Redoslijed: 14.1 → 14.2 → 14.3.
       session-only (Salon profil na drugoj stranici i dalje pokazuje originalne mock podatke nakon
       navigacije — isti obrazac kao svugdje, ne piše u `lib/mock-data/services.json`)
 
-### 14.2 Favorite usluga+radnik + lokacijska pretraga
+### 14.2 Favorite usluga+radnik + lokacijska pretraga — [x] GOTOVO
 
 **Favorite (booking wizard korak 2), `docs/specifikacija.md` §4.3 / `docs/frontend.md`:**
 
-- [ ] `types/entities.ts` — novi `FavoriteServiceWorker` interfejs (id/clientId/salonId/serviceId/
+- [x] `types/entities.ts` — novi `FavoriteServiceWorker` interfejs (id/clientId/salonId/serviceId/
       workerId/createdAt), tačno prema `docs/database.md`
-- [ ] `lib/mock-data/favorites.json` — seed: Sanela (client 1) favorite radnik Amina Selimović za
+- [x] `lib/mock-data/favorites.json` — seed: Sanela (client 1) favorite radnik Amina Selimović za
       "Bojenje cijele kose" (id 4) u Studio Lux-u — stvarno odražava njenu postojeću historiju (2
-      termina, oba kod iste radnice), ne izmišljen podatak
-- [ ] `lib/api/favorites.ts` — `getFavoritesForClientSalon()` (async) + čiste helper funkcije
+      termina, oba kod iste radnice), ne izmišljen podatak. "Žensko šišanje" (2 termina, različiti
+      radnici, bez favorite reda) demonstrira stanje 2; sve ostale usluge (bez historije) stanje 1 —
+      sva 3 stanja pokrivena iz POSTOJEĆIH `bookings.json` podataka, bez fabrikovanja
+- [x] `lib/api/favorites.ts` — `getFavoritesForClientSalon()` (async) + čiste helper funkcije
       `pickFavoriteWorkerId(favorites, serviceId)` i `pickLastUsedWorkerId(bookings, serviceId)`
-- [ ] `lib/api/bookings.ts` — nova `getClientBookingsAtSalon(clientId, salonId)` (svi statusi/datumi,
+      (najnoviji booking po `scheduledAt` za tu uslugu, bilo kog statusa)
+- [x] `lib/api/bookings.ts` — nova `getClientBookingsAtSalon(clientId, salonId)` (svi statusi/datumi,
       za "zadnje korišteni radnik" upit)
-- [ ] `app/[locale]/(public)/saloni/[slug]/zakazi/page.tsx` — fetch favorites + client bookings
-      (`CURRENT_CLIENT_ID`), proslijediti `BookingWizard`-u
-- [ ] `components/booking/booking-wizard.tsx` korak "Radnik" — 3 stanja: favorite postoji → jedna
-      kartica + "Promijeni" (otvara punu listu, fallback na stanje 1/2); nema favorite-a ali ima
-      historije → puna lista sa zadnje korištenim pred-selektovanim (soft, promjenjivo); nema
-      historije → puna lista, ništa pred-selektovano (postojeće ponašanje)
-- [ ] Isti fajl, "Hvala" ekran — checkbox "Sačuvaj kao omiljeno" (samo kad je konkretan radnik biran,
-      ne "Bilo koji radnik", i još nije favorite) → session-only React state (ne piše u
-      `favorites.json`) — testirati da "Zakaži još jedan termin" pa ista usluga odmah pokazuje
-      stanje 3, jer komponenta ostaje mounted (ne remount/navigacija)
+- [x] `app/[locale]/(public)/saloni/[slug]/zakazi/page.tsx` — fetch favorites + client bookings
+      (`CURRENT_CLIENT_ID`), proslijeđeno `BookingWizard`-u
+- [x] `components/booking/booking-wizard.tsx` korak "Radnik" — sva 3 stanja implementirana:
+      favorite postoji → jedna kartica ("Omiljeni radnik" bedž + inicijali/ime/pozicija) + "Nastavi s
+      {ime}"/"Promijeni radnika" (otkriva punu listu, fallback na stanje 1/2, `revealAllWorkers`
+      state); nema favorite-a ali ima historije → puna lista + eyebrow-pill "Prijedlog na osnovu tvog
+      zadnjeg termina: {ime}" + taj radnik već vizuelno označen (`workerChoice` pred-postavljen u
+      `pickService()`, i dalje slobodno promjenjiv klikom na bilo kog drugog); nema historije → puna
+      lista, ništa označeno (postojeće ponašanje nepromijenjeno). Radi i kroz deep-link
+      (`?usluga=X`), ne samo klikom kroz korak 0 — favorite/zadnje-korišteno se računa reaktivno iz
+      `serviceId` state-a, ne samo unutar `pickService()` handler-a. **Namjerna izmjena ponašanja:**
+      stari auto-skip "ako je workerChoice već postavljen, preskoči korak 1 pri promjeni usluge" je
+      uklonjen — korak 1 se sad UVIJEK prikazuje (osim kod solo-radnik salona) da bi klijent stvarno
+      VIDIO predloženog/omiljenog radnika prije potvrde, umjesto da se tiho preskoči
+- [x] Isti fajl, "Hvala" ekran (NE korak potvrde — spec eksplicitno kaže "nakon uspješne rezervacije")
+      — kartica "Sačuvaj {usluga} kod {radnik} kao omiljeno" + dugme "Sačuvaj" (prikazano samo kad je
+      biran konkretan radnik, ne "Bilo koji radnik", i kombinacija još nije favorite), klik →
+      session-only `sessionFavorites` state (ne piše u `favorites.json`) + kartica se mijenja u
+      potvrdu "{usluga} kod {radnik} je sad tvoja omiljena kombinacija." **Bug otkriven i popravljen
+      ovu sesiju:** početna verzija je gate-ovala cijelu karticu s `!alreadyFavorite`, pa je kartica
+      NESTAJALA umjesto da pokaže poruku potvrde čim bi se favorite sačuvao (jer `alreadyFavorite`
+      postane `true` odmah nakon snimanja) — popravljeno na `favoriteSaved || !alreadyFavorite`.
+      Testirano puno write→read u istoj sesiji: zakazan termin bez favorite-a → sačuvano na "Hvala"
+      ekranu → "Zakaži još jedan termin" → ista usluga odmah pokazuje stanje 3 (komponenta ostaje
+      mounted, ne remount/navigacija)
 
 **Lokacijska pretraga "blizu mene", `docs/specifikacija.md` §4.7 / `docs/frontend.md`:**
 
-- [ ] `lib/geo.ts` (novo) — čista `haversineKm(lat1,lng1,lat2,lng2)` funkcija
-- [ ] `lib/hooks/use-geolocation.ts` (novo) — wrapper oko `navigator.geolocation`, stanja
-      idle/loading/granted/denied/unavailable
-- [ ] `lib/api/salons.ts` — `SalonSort` dobija `"distance"`; nova `attachDistances(salons, coords)`
+- [x] `lib/geo.ts` (novo) — čista `haversineKm(lat1,lng1,lat2,lng2)` funkcija
+- [x] `hooks/use-geolocation.ts` (novo — vidi napomenu ispod za lokaciju foldera) — wrapper oko
+      `navigator.geolocation`, stanja idle/loading/granted/denied/unavailable, `request()`/`reset()`
+- [x] `lib/api/salons.ts` — `SalonSort` dobio `"distance"`; nova `attachDistances(salons, coords)`
       helper (koristi `Salon.latitude`/`longitude`, već popunjeni u `salons.json` za svih 8 salona —
-      "geocoding" korak već postoji na nivou mock podataka)
-- [ ] `lib/format.ts` — `formatDistance(km)` helper (isti obrazac kao `formatPrice`)
-- [ ] `components/discovery/salon-card.tsx` — prikaz "X km" bedža kad `salon.distanceKm` postoji
-      (polje već postoji u `types/entities.ts`, nikad popunjeno/prikazano do sad)
-- [ ] `components/discovery/search-content.tsx` — nov filter chip "Blizu mene": prvi klik pokazuje
-      kratko objašnjenje PRIJE browser prompta, zatim traži lokaciju; uspjeh → sort se automatski
-      postavlja na "Najbliže" (nova opcija u Sort select-u) + km na karticama; odbijanje/nedostupno →
-      tiho vraća prethodno stanje, bez greške (frontend.md: "korisnik ne smije osjetiti da je nešto
-      pošlo po zlu")
-- [ ] Home page (`components/home/home-content.tsx` + `app/[locale]/(public)/page.tsx`) — nova
-      "Najbliže tebi" sekcija (prijevodi `nearbyEyebrow`/`nearbyTitle`/`nearbyLocationPrompt` već
-      postoje u `messages/bs.json` od ranije, nikad iskorišteni), ista geolocation logika, potpuno
-      nestaje (ne prazno stanje/greška) ako korisnik odbije — dizajn (`Home page.dc.html`) nema ovu
-      sekciju uopšte, gradi se iz postojećeg `SalonCard`-a kao što je ranija sesija predložila
+      "geocoding" korak već postojao na nivou mock podataka, samo se do sad nigdje nije koristio)
+- [x] `lib/format.ts` — `formatDistance(km)` helper (isti obrazac kao `formatPrice`; "850 m" ispod
+      1km, "1,2 km" iznad, zarez decimalni separator)
+- [x] `components/discovery/salon-card.tsx` — prikaz udaljenosti (ikona `Navigation` + tekst, brand
+      boja) kad `salon.distanceKm` postoji (polje postojalo u `types/entities.ts` od ranije, nikad
+      popunjeno/prikazano do sad)
+- [x] `components/discovery/search-content.tsx` — nov filter chip "Blizu mene" (ikona `LocateFixed`):
+      prvi klik (kad geolokacija još nije `granted`) pokazuje inline banner s objašnjenjem PRIJE
+      browser prompta + dugme "Dozvoli lokaciju"; uspjeh → `sort` se automatski postavlja na
+      `"distance"` (nova "Najbliže" stavka i u Sort chip redu, klik na nju izvan aktivnog "blizu mene"
+      stanja pokreće isti explain→request tok); odbijanje/nedostupno → banner se tiho sklanja, chip
+      ostaje neaktivan, BEZ greške (frontend.md: "korisnik ne smije osjetiti da je nešto pošlo po
+      zlu"). Postojeći `search.comingSoonNote` tekst ažuriran (ranije je obećavao da "blizu mene"
+      dolazi u sljedećoj verziji — sad je uklonjeno, ostavljena samo napomena o mapi koja i dalje nije
+      implementirana, V2 po specifikaciji)
+- [x] Home page (`components/home/home-content.tsx` + `app/[locale]/(public)/page.tsx`) — nova
+      "Najbliže tebi" sekcija, ista geolocation logika kao Pretraga (zaseban `useGeolocation()` poziv,
+      neovisan state). Prijevodi `nearbyEyebrow`/`nearbyTitle`/`nearbyLocationPrompt` su POSTOJALI u
+      `messages/bs.json` od ranije sesije, nikad iskorišteni — dodano još `nearbyAllow`/
+      `nearbyLoading`/`nearbyEmpty`. CTA kartica ("Dozvoli lokaciju da vidiš najbliže salone" + dugme)
+      prikazana dok god korisnik nije odbio/nedostupno; nakon dozvole zamjenjuje se gridom od 4
+      najbliža salona (svi gradovi, ne samo Sarajevo — "blizu mene" ignoriše grad filter po dizajnu
+      loga funkcije); odbijanje/nedostupno → CIJELA sekcija nestaje (ne prazno stanje), dizajn
+      (`Home page.dc.html`) nema ovu sekciju uopšte pa je izgrađena iz postojećeg `SalonCard`-a kao
+      što je ranija sesija predložila. **Napomena:** `HomeContent` je ovom izmjenom postao pravi
+      `"use client"` komponent (ranije je radio kao ne-async Server Component koristeći next-intl-ov
+      poseban RSC `useTranslations()` mehanizam) — nužno jer geolocation zahtijeva `useState`/
+      `useEffect`; `cities`/`featured`/`allSalons` i dalje stižu kao server-fetched props, nema
+      regresije u obrascu podataka
+- [x] **Napomena o folder strukturi:** `docs/frontend.md` dokumentuje `hooks/` kao top-level folder
+      (sibling od `lib/`), ne `lib/hooks/` kako je originalni plan u ovoj sekciji pisao — praćen
+      dokumentovan obrazac, `use-geolocation.ts` je na `hooks/use-geolocation.ts`
+- [x] Testirano funkcionalno (mock `navigator.geolocation` za deterministički granted/denied,
+      pravi browser permission dialog nije dostupan u ovom test okruženju): Pretraga — "Blizu mene"
+      chip → banner → dozvola (mock koordinate blizu Studio Lux-a) → svih 8 salona ispravno sortirano
+      po udaljenosti (293m/481m/995m/1,7km/2,3km/3,2km/...) + "Najbliže" sort chip sinhronizovan;
+      isključivanje chip-a vraća "Preporučeno" i uklanja bedževe; odbijanje → banner nestaje, chip
+      ostaje neaktivan, bez greške. Home page — CTA → dozvola → 4 najbliža salona s ispravnim
+      udaljenostima i formatiranjem; odbijanje → cijela sekcija nestaje. Provjereno i mobile layout
+      (Pretraga chip red). `npx tsc --noEmit` čist (0 grešaka) nakon svih izmjena u ovoj stavci
 
 ### 14.3 Rola se ne prenosi između dashboard stranica — [x] GOTOVO
 

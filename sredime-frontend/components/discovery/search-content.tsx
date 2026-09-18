@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, Sparkles, SearchX } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { LocateFixed, Search, Sparkles, SearchX, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Navbar } from "@/components/chrome/navbar";
 import { Footer } from "@/components/chrome/footer";
@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { CATEGORY_META, CITIES } from "@/lib/constants/categories";
-import { filterSalons, type SalonSort } from "@/lib/api/salons";
+import { filterSalons, attachDistances, type SalonSort } from "@/lib/api/salons";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import type { Salon, SalonCategory } from "@/types/entities";
 
 const PAGE_SIZE = 6;
@@ -50,7 +51,40 @@ export function SearchContent({
   const [sort, setSort] = useState<SalonSort>("recommended");
   const [showAll, setShowAll] = useState(false);
 
-  const filterKey = `${city}|${query}|${category}|${today}|${now}|${topRated}|${cheap}|${sort}`;
+  const geo = useGeolocation();
+  const [nearMe, setNearMe] = useState(false);
+  const [showNearMeExplain, setShowNearMeExplain] = useState(false);
+
+  useEffect(() => {
+    if (geo.status === "granted") {
+      setNearMe(true);
+      setSort("distance");
+      setShowNearMeExplain(false);
+    } else if (geo.status === "denied" || geo.status === "unavailable") {
+      setShowNearMeExplain(false);
+    }
+  }, [geo.status]);
+
+  function toggleNearMe() {
+    if (nearMe) {
+      setNearMe(false);
+      setSort("recommended");
+      return;
+    }
+    if (geo.status === "granted" && geo.coords) {
+      setNearMe(true);
+      setSort("distance");
+      return;
+    }
+    setShowNearMeExplain(true);
+  }
+
+  const salonsForDisplay = useMemo(
+    () => (nearMe && geo.coords ? attachDistances(salons, geo.coords) : salons),
+    [salons, nearMe, geo.coords],
+  );
+
+  const filterKey = `${city}|${query}|${category}|${today}|${now}|${topRated}|${cheap}|${sort}|${nearMe}`;
   const [lastFilterKey, setLastFilterKey] = useState(filterKey);
   if (filterKey !== lastFilterKey) {
     setLastFilterKey(filterKey);
@@ -59,7 +93,7 @@ export function SearchContent({
 
   const results = useMemo(
     () =>
-      filterSalons(salons, {
+      filterSalons(salonsForDisplay, {
         city: city || undefined,
         query,
         category: category === "sve" ? undefined : category,
@@ -69,7 +103,7 @@ export function SearchContent({
         maxPrice: cheap ? 20 : undefined,
         sort,
       }),
-    [salons, city, query, category, today, now, topRated, cheap, sort],
+    [salonsForDisplay, city, query, category, today, now, topRated, cheap, sort],
   );
 
   const anyFilterActive = category !== "sve" || today || now || topRated || cheap || query.trim() !== "";
@@ -91,6 +125,13 @@ export function SearchContent({
       : `${results.length} ${results.length === 1 ? t("resultsSalon") : t("resultsSalonPlural")} · ${cityLabel}`;
 
   const filterDefs = [
+    {
+      key: "nearMe" as const,
+      label: geo.status === "loading" ? t("nearMeLoading") : t("filterNearMe"),
+      on: nearMe,
+      toggle: toggleNearMe,
+      icon: <Icon icon={LocateFixed} size={14} />,
+    },
     { key: "today" as const, label: t("filterToday"), on: today, toggle: () => setToday((v) => !v) },
     { key: "now" as const, label: t("filterNow"), on: now, toggle: () => setNow((v) => !v) },
     { key: "topRated" as const, label: t("filterTopRated"), on: topRated, toggle: () => setTopRated((v) => !v) },
@@ -101,6 +142,7 @@ export function SearchContent({
     { id: "recommended", label: t("sortRecommended") },
     { id: "rating", label: t("sortRating") },
     { id: "price", label: t("sortPrice") },
+    { id: "distance", label: t("sortDistance") },
   ];
 
   return (
@@ -158,9 +200,27 @@ export function SearchContent({
           ))}
         </div>
 
+        {showNearMeExplain && (
+          <div className="flex flex-wrap items-center gap-3 rounded-control bg-brand-subtle px-4 py-3">
+            <Icon icon={LocateFixed} size={16} className="flex-none text-brand" />
+            <span className="flex-1 text-sm text-text-primary">{t("nearMePrompt")}</span>
+            <Button type="button" variant="primary" size="sm" onClick={geo.request}>
+              {t("nearMeAllow")}
+            </Button>
+            <button
+              type="button"
+              onClick={() => setShowNearMeExplain(false)}
+              aria-label={t("nearMeDismiss")}
+              className="text-icon-muted"
+            >
+              <Icon icon={X} size={16} />
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-2">
           {filterDefs.map((f) => (
-            <FilterChip key={f.key} active={f.on} onClick={f.toggle} className="flex-none">
+            <FilterChip key={f.key} icon={f.icon} active={f.on} onClick={f.toggle} className="flex-none">
               {f.label}
             </FilterChip>
           ))}
@@ -179,7 +239,12 @@ export function SearchContent({
           <span className="text-base font-bold text-text-primary">{resultLabel}</span>
           <div className="flex gap-1.5">
             {sortDefs.map((s) => (
-              <FilterChip key={s.id} active={sort === s.id} onClick={() => setSort(s.id)} className="h-8 flex-none px-3.5 text-xs">
+              <FilterChip
+                key={s.id}
+                active={sort === s.id}
+                onClick={() => (s.id === "distance" ? toggleNearMe() : setSort(s.id))}
+                className="h-8 flex-none px-3.5 text-xs"
+              >
                 {s.label}
               </FilterChip>
             ))}

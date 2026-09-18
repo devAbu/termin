@@ -1,5 +1,6 @@
 import type { Salon, SalonCategory } from "@/types/entities";
 import salonsFixture from "@/lib/mock-data/salons.json";
+import { haversineKm, type GeoCoords } from "@/lib/geo";
 
 /**
  * Mock data-access layer. Every function here has the same signature/return
@@ -28,7 +29,19 @@ export async function getFeaturedSalons(opts?: {
     .slice(0, limit);
 }
 
-export type SalonSort = "recommended" | "rating" | "price";
+export type SalonSort = "recommended" | "rating" | "price" | "distance";
+
+/**
+ * Attaches `distanceKm` (docs/database.md: computed, not stored) to each salon using the
+ * client's browser-geolocation coords — pure Haversine math, no geocoding call (that already
+ * happened once, at salon-address-save time, to populate `latitude`/`longitude`). Salons without
+ * coordinates are left out of distance-sorted results (docs/backend.md fallback rule).
+ */
+export function attachDistances(list: SalonListItem[], coords: GeoCoords): SalonListItem[] {
+  return list
+    .filter((s) => s.latitude != null && s.longitude != null)
+    .map((s) => ({ ...s, distanceKm: haversineKm(coords.lat, coords.lng, s.latitude!, s.longitude!) }));
+}
 
 /** "Slobodno sada" — next slot is today and starts within the next 3h (or up to 30min ago). */
 function isAvailableNow(salon: SalonListItem): boolean {
@@ -80,6 +93,9 @@ export function filterSalons(list: SalonListItem[], opts: SalonSearchOpts): Salo
 
   if (opts.sort === "rating") result = result.slice().sort((a, b) => b.rating - a.rating);
   if (opts.sort === "price") result = result.slice().sort((a, b) => Number(a.priceFrom) - Number(b.priceFrom));
+  if (opts.sort === "distance") {
+    result = result.slice().sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+  }
 
   return result;
 }

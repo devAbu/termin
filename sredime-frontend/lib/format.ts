@@ -38,6 +38,13 @@ export function pluralBs(count: number, one: string, few: string, many: string):
   return count === 1 ? one : count >= 2 && count <= 4 ? few : many;
 }
 
+/** "850 m" under 1km, "1,2 km" otherwise — matches frontend.md's "1.2 km" example, comma decimal per design/README.md. */
+export function formatDistance(km: number): string {
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  const rounded = Math.round(km * 10) / 10;
+  return `${rounded.toString().replace(".", ",")} km`;
+}
+
 export function formatPercent(value: number): string {
   return `${value.toLocaleString("bs-BA", { maximumFractionDigits: 1 })}%`;
 }

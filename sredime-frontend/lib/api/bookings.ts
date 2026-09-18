@@ -109,6 +109,12 @@ export async function getSalonBookings(salonId: number): Promise<BookingDetails[
   return details.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 }
 
+/** Booking wizard step 2 ("zadnje korišteni radnik") — this client's bookings at one salon, any status/date. */
+export async function getClientBookingsAtSalon(clientId: number, salonId: number): Promise<BookingDetails[]> {
+  const rows = all().filter((b) => b.clientId === clientId && b.salonId === salonId);
+  return withDetailsAll(rows);
+}
+
 function isSameCalendarDay(iso: string, date: Date): boolean {
   const d = new Date(iso);
   return d.getFullYear() === date.getFullYear() && d.getMonth() === date.getMonth() && d.getDate() === date.getDate();

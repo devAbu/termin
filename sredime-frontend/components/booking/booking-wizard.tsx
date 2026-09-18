@@ -8,6 +8,7 @@ import {
   CalendarCheck,
   Check,
   Clock,
+  Heart,
   Info,
   Scissors,
   User,
@@ -22,7 +23,9 @@ import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 import { formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice } from "@/lib/format";
 import { computeSlots, countFreeSlots } from "@/lib/api/availability";
-import type { Salon, Service, Worker } from "@/types/entities";
+import { CURRENT_CLIENT_ID, type BookingDetails } from "@/lib/api/bookings";
+import { pickFavoriteWorkerId, pickLastUsedWorkerId } from "@/lib/api/favorites";
+import type { FavoriteServiceWorker, Salon, Service, Worker } from "@/types/entities";
 
 type Step = 0 | 1 | 2 | 3;
 const DAY_WINDOW = 14;
@@ -43,12 +46,16 @@ export function BookingWizard({
   salon,
   services,
   workers,
+  clientBookings = [],
+  favorites = [],
   initialServiceId,
   initialWorkerId,
 }: {
   salon: Salon;
   services: Service[];
   workers: Worker[];
+  clientBookings?: BookingDetails[];
+  favorites?: FavoriteServiceWorker[];
   initialServiceId?: number;
   initialWorkerId?: number;
 }) {
@@ -63,6 +70,9 @@ export function BookingWizard({
     return initialWorkerId ? 2 : 1;
   });
   const [reached, setReached] = useState<Step>(step);
+  const [revealAllWorkers, setRevealAllWorkers] = useState(false);
+  const [sessionFavorites, setSessionFavorites] = useState<FavoriteServiceWorker[]>([]);
+  const [favoriteSaved, setFavoriteSaved] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -71,6 +81,8 @@ export function BookingWizard({
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [done, setDone] = useState(false);
+
+  const allFavorites = useMemo(() => [...favorites, ...sessionFavorites], [favorites, sessionFavorites]);
 
   const service = services.find((s) => s.id === serviceId) ?? null;
   const servicePrice = service ? getEffectivePrice(service.price, service.discountPercent) : 0;
@@ -82,6 +94,12 @@ export function BookingWizard({
     [workerChoice, service?.id, worker?.id],
   );
 
+  const favoriteWorkerId = serviceId != null ? pickFavoriteWorkerId(allFavorites, serviceId) : null;
+  const lastUsedWorkerId = serviceId != null ? pickLastUsedWorkerId(clientBookings, serviceId) : null;
+  const isFavoriteEligible = favoriteWorkerId != null && eligibleWorkers.some((w) => w.id === favoriteWorkerId);
+  const showFavoriteCard = isFavoriteEligible && !revealAllWorkers;
+  const alreadyFavorite = worker != null && favoriteWorkerId === worker.id;
+
   function go(next: Step) {
     setStep(next);
     setReached((r) => (r > next ? r : next) as Step);
@@ -89,13 +107,29 @@ export function BookingWizard({
 
   function pickService(id: number) {
     setServiceId(id);
-    if (workerChoice != null) go(2);
-    else go(solo ? 2 : 1);
+    setRevealAllWorkers(false);
+    const svc = services.find((s) => s.id === id);
+    const eligible = svc ? workers.filter((w) => svc.workerIds.includes(w.id)) : [];
+    const fav = pickFavoriteWorkerId(allFavorites, id);
+    const last = pickLastUsedWorkerId(clientBookings, id);
+    if (fav != null && eligible.some((w) => w.id === fav)) setWorkerChoice(fav);
+    else if (last != null && eligible.some((w) => w.id === last)) setWorkerChoice(last);
+    else setWorkerChoice(null);
+    go(solo ? 2 : 1);
   }
 
   function pickWorker(choice: number | "any") {
     setWorkerChoice(choice);
     go(2);
+  }
+
+  function confirmSaveFavorite() {
+    if (!service || !worker) return;
+    setSessionFavorites((cur) => [
+      ...cur,
+      { id: Date.now(), clientId: CURRENT_CLIENT_ID, salonId: salon.id, serviceId: service.id, workerId: worker.id, createdAt: new Date().toISOString() },
+    ]);
+    setFavoriteSaved(true);
   }
 
   function pickSlot(date: Date, time: string) {
@@ -177,6 +211,8 @@ export function BookingWizard({
     setServiceId(null);
     setWorkerChoice(null);
     setSelectedTime(null);
+    setRevealAllWorkers(false);
+    setFavoriteSaved(false);
     setDone(false);
   }
 
@@ -291,6 +327,23 @@ export function BookingWizard({
                 <div className="rounded-md bg-surface-sunken px-4 py-3 text-sm text-text-secondary">
                   {t("paymentCancelNote")}
                 </div>
+
+                {worker && service && (favoriteSaved || !alreadyFavorite) && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-brand-subtle px-4 py-3">
+                    <span className="flex items-start gap-2.5 text-sm text-text-primary">
+                      <Icon icon={Heart} size={16} className="mt-0.5 flex-none text-brand" />
+                      {favoriteSaved
+                        ? t("favoriteSavedNote", { worker: worker.name, service: service.name })
+                        : t("favoriteOfferNote", { worker: worker.name, service: service.name })}
+                    </span>
+                    {!favoriteSaved && (
+                      <Button type="button" variant="secondary" size="sm" onClick={confirmSaveFavorite}>
+                        {t("saveFavoriteCta")}
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-3">
                   <Button asChild variant="primary" size="md">
                     <Link href="/moji-termini">{t("myBookings")}</Link>
@@ -353,39 +406,78 @@ export function BookingWizard({
                       <h2 className="text-xl font-bold text-text-primary md:text-2xl">{t("staffTitle")}</h2>
                       <p className="mt-1.5 text-sm text-text-secondary">{t("staffLead")}</p>
                     </div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-                      <button
-                        type="button"
-                        onClick={() => pickWorker("any")}
-                        className={cn(
-                          "flex flex-col items-center gap-2 rounded-card p-4 text-center shadow-card",
-                          workerChoice === "any" ? "bg-brand-subtle ring-1 ring-inset ring-indigo-200" : "bg-card",
-                        )}
-                      >
-                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-sunken text-icon-muted">
-                          <Icon icon={User} size={20} />
-                        </span>
-                        <span className="text-sm font-bold text-text-primary">{t("staffAnyName")}</span>
-                        <span className="text-xs text-text-secondary">{t("staffAnyRole")}</span>
-                      </button>
-                      {eligibleWorkers.map((w) => (
-                        <button
-                          key={w.id}
-                          type="button"
-                          onClick={() => pickWorker(w.id)}
-                          className={cn(
-                            "flex flex-col items-center gap-2 rounded-card p-4 text-center shadow-card",
-                            workerChoice === w.id ? "bg-brand-subtle ring-1 ring-inset ring-indigo-200" : "bg-card",
-                          )}
-                        >
-                          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-400">
-                            {w.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+
+                    {showFavoriteCard ? (
+                      (() => {
+                        const favWorker = workers.find((w) => w.id === favoriteWorkerId);
+                        if (!favWorker) return null;
+                        return (
+                          <div className="flex flex-col items-center gap-3 rounded-card bg-card p-6 text-center shadow-card">
+                            <span className="inline-flex items-center gap-1.5 rounded-pill bg-danger-bg px-3 py-1 text-2xs font-semibold text-danger-fg">
+                              <Icon icon={Heart} size={12} />
+                              {t("staffFavoriteBadge")}
+                            </span>
+                            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 text-base font-bold text-indigo-400">
+                              {favWorker.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                            </span>
+                            <span className="flex flex-col gap-0.5">
+                              <span className="text-base font-bold text-text-primary">{favWorker.name}</span>
+                              <span className="text-sm text-text-secondary">{favWorker.position}</span>
+                            </span>
+                            <div className="flex flex-wrap justify-center gap-2 pt-1">
+                              <Button type="button" variant="accent" size="md" onClick={() => pickWorker(favWorker.id)}>
+                                {t("staffContinueWith", { name: favWorker.name.split(" ")[0] })}
+                              </Button>
+                              <Button type="button" variant="secondary" size="md" onClick={() => setRevealAllWorkers(true)}>
+                                {t("staffChangeWorker")}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <>
+                        {!favoriteWorkerId && lastUsedWorkerId != null && (
+                          <span className="inline-flex w-fit items-center gap-1.5 rounded-pill bg-brand-subtle px-3 py-1.5 text-xs font-medium text-brand">
+                            <Icon icon={Check} size={13} />
+                            {t("staffSuggestedNote", { name: workers.find((w) => w.id === lastUsedWorkerId)?.name.split(" ")[0] ?? "" })}
                           </span>
-                          <span className="text-sm font-bold text-text-primary">{w.name}</span>
-                          <span className="text-xs text-text-secondary">{w.position}</span>
-                        </button>
-                      ))}
-                    </div>
+                        )}
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
+                          <button
+                            type="button"
+                            onClick={() => pickWorker("any")}
+                            className={cn(
+                              "flex flex-col items-center gap-2 rounded-card p-4 text-center shadow-card",
+                              workerChoice === "any" ? "bg-brand-subtle ring-1 ring-inset ring-indigo-200" : "bg-card",
+                            )}
+                          >
+                            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-sunken text-icon-muted">
+                              <Icon icon={User} size={20} />
+                            </span>
+                            <span className="text-sm font-bold text-text-primary">{t("staffAnyName")}</span>
+                            <span className="text-xs text-text-secondary">{t("staffAnyRole")}</span>
+                          </button>
+                          {eligibleWorkers.map((w) => (
+                            <button
+                              key={w.id}
+                              type="button"
+                              onClick={() => pickWorker(w.id)}
+                              className={cn(
+                                "flex flex-col items-center gap-2 rounded-card p-4 text-center shadow-card",
+                                workerChoice === w.id ? "bg-brand-subtle ring-1 ring-inset ring-indigo-200" : "bg-card",
+                              )}
+                            >
+                              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-400">
+                                {w.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                              </span>
+                              <span className="text-sm font-bold text-text-primary">{w.name}</span>
+                              <span className="text-xs text-text-secondary">{w.position}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 

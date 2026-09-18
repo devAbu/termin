@@ -1,4 +1,4 @@
-import { CircleCheck, Calendar, MapPin, Image as ImageIcon } from "lucide-react";
+import { CircleCheck, Calendar, MapPin, Navigation, Image as ImageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Card } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { StarRating } from "@/components/discovery/star-rating";
 import { Icon } from "@/components/ui/icon";
 import { CATEGORY_META } from "@/lib/constants/categories";
 import { cn } from "@/lib/utils";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatDistance } from "@/lib/format";
 import type { Salon } from "@/types/entities";
 
 export function SalonCard({ salon }: { salon: Salon }) {
@@ -47,6 +47,12 @@ export function SalonCard({ salon }: { salon: Salon }) {
               <Icon icon={MapPin} size={14} className="shrink-0 text-icon-muted" />
               {salon.address}
             </span>
+            {salon.distanceKm != null && (
+              <span className="inline-flex items-center gap-1.5 text-brand">
+                <Icon icon={Navigation} size={13} className="shrink-0" />
+                {formatDistance(salon.distanceKm)}
+              </span>
+            )}
           </div>
           <div className="flex-1" />
           <div className="h-px bg-border-subtle" />

@@ -4,6 +4,8 @@ import { BookingWizard } from "@/components/booking/booking-wizard";
 import { getSalonBySlug } from "@/lib/api/salons";
 import { getWorkersBySalon } from "@/lib/api/workers";
 import { getServicesBySalon } from "@/lib/api/services";
+import { getClientBookingsAtSalon, CURRENT_CLIENT_ID } from "@/lib/api/bookings";
+import { getFavoritesForClientSalon } from "@/lib/api/favorites";
 
 export async function generateMetadata({
   params,
@@ -28,9 +30,11 @@ export default async function BookingPage({
   const salon = await getSalonBySlug(slug);
   if (!salon) notFound();
 
-  const [workers, services] = await Promise.all([
+  const [workers, services, clientBookings, favorites] = await Promise.all([
     getWorkersBySalon(salon.id),
     getServicesBySalon(salon.id),
+    getClientBookingsAtSalon(CURRENT_CLIENT_ID, salon.id),
+    getFavoritesForClientSalon(CURRENT_CLIENT_ID, salon.id),
   ]);
 
   const initialServiceId = usluga ? services.find((s) => s.id === Number(usluga))?.id : undefined;
@@ -41,6 +45,8 @@ export default async function BookingPage({
       salon={salon}
       services={services}
       workers={workers}
+      clientBookings={clientBookings}
+      favorites={favorites}
       initialServiceId={initialServiceId}
       initialWorkerId={initialWorkerId}
     />

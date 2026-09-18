@@ -125,6 +125,15 @@ export interface ClientNote {
   createdAt: string; // UTC ISO 8601
 }
 
+export interface FavoriteServiceWorker {
+  id: number;
+  clientId: number;
+  salonId: number;
+  serviceId: number;
+  workerId: number;
+  createdAt: string; // UTC ISO 8601
+}
+
 export interface Review {
   id: number;
   bookingId: number;
