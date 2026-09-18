@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
+import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { formatPrice, getEffectivePrice } from "@/lib/format";
 import type { Service } from "@/types/entities";
 
@@ -57,7 +58,7 @@ export function EditServiceModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-sm">
+    <ModalOverlay>
       <div className="flex max-h-[92vh] w-full max-w-[440px] flex-col gap-4 overflow-y-auto rounded-modal bg-card p-6 shadow-modal">
         <div className="flex items-start gap-3">
           <div className="flex min-w-0 flex-col gap-1">
@@ -135,6 +136,6 @@ export function EditServiceModal({
           </Button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

@@ -42,17 +42,42 @@ nalaza dogovorena kao sljedeći frontend rad — vidi **§15** za pun detalj i r
 
 **AŽURIRANO 2026-09-18 (isti dan, naredni krug):** korisnik je tražio KODNI audit (ne samo UI) —
 bugovi, dupliciran kod, i da li je arhitektura odvojena/spremna za budući mobile app (V3+, po
-`docs/frontend.md`/`docs/mobile.md`). Nalazi i plan dogovoreni i upisani u **§16**, ČEKAJU eksplicitno
-"kreni" po fazi (korisnik je eksplicitno tražio: prvo plan u PROGRESS.md, tek onda kod):
-- **§16.1 Faza 1** (čeka "kreni"): 2 stvarna bug-a (UTC datum-bug u availability.ts, pad aplikacije
-  kod uzastopnog pomjeranja termina) + 6 stavki dupliciranog koda (initials helper, boja bedža
-  statusa, modal/toast markup, Role/Page tip, hardkodirana mock imena)
-- **§16.2 Faza 2** (posebna runda, POSLIJE Faze 1, veći/rizičniji zahvat): rastavljanje 4
-  "god-komponenti" (600-870 linija) i izvlačenje poslovne logike/validacije u `lib/` — prava
+`docs/frontend.md`/`docs/mobile.md`). Nalazi i plan dogovoreni i upisani u **§16**:
+- **§16.1 Faza 1 — GOTOVO I NEZAVISNO VERIFIKOVANO** (vidi §16.1 ispod za pun detalj): 2 stvarna bug-a
+  (UTC datum-bug u `availability.ts`, pad aplikacije kod uzastopnog pomjeranja termina) + 6 stavki
+  dupliciranog koda (initials helper, boja bedža statusa, modal/toast markup, Role/Page tip,
+  hardkodirana mock imena) popravljeno. `npx tsc --noEmit` čist nakon svake stavke, live-testirano u
+  browseru (Zahtjevi tab dashboard-a za Pomjeri-reset, dashboard/klijenti/radnici tabovi za initials,
+  quick-login za SESSION_NAMES/navbar firstName).
+  **DODATNA VERIFIKACIJA (isti dan, korisnikov eksplicitan zahtjev prije "kreni" na Fazu 2):**
+  6-anglovni code-review (paralelni agenti: line-by-line, removed-behavior audit, cross-file tracer,
+  reuse/simplification, efficiency/altitude, CLAUDE.md konvencije) + egzaktno logičko testiranje oba
+  bug-fixa protiv stvarnog izvornog koda — Bug A: 144 sat/minut kombinacije kroz CEST/CET (DST), stari
+  kod 9 grešaka / novi kod 0; end-to-end `computeSlots()` reprodukcija originalnog scenarija (13
+  lažno-slobodnih prošlih slotova → 0). Bug B: 50 exhaustivnih kombinacija (broj slotova × klik
+  indeks × broj slotova drugog termina), stari kod 10/50 padova (TypeError) / novi kod 0/50. Sve 6
+  konsolidacija potvrđene bez pokvarenih import putanja/izgubljenog ponašanja/zamijenjenih vrijednosti;
+  jedina namjerna promjena ponašanja (unifikacija boje bedža statusa na klijentskoj strani) potvrđena
+  kao dogovorena u planu (ne slučajna regresija) i vizuelno provjerena uživo (computed CSS boje).
+  4 sitna nalaza niskog rizika (nisu bugovi) odmah popravljena: `contactFor()` sad koristi
+  `firstName()`; `BOOKING_STATUS_TONE` izdvojen iz `lib/format.ts` u novi `lib/booking-status.ts`
+  (format.ts ostaje čisto o formatiranju teksta, bez zavisnosti od `BookingStatus` domenskog tipa);
+  `lastUsedWorkerName` u booking-wizard.tsx pojednostavljen na jedan izraz; `moveChoice` reset
+  refaktorisan sa ručnih `openActionModal`/`closeActionModal` helpera (fragilno — oslanja se na
+  disciplinu pozivaoca) na React-preporučeni "adjust state during render" obrazac vezan za identitet
+  `actionModal`-a (strukturalno se ne može zaboraviti na budućem novom exit putu) — **napomena:** prvi
+  pokušaj ovog refaktora je koristio `useEffect` za reset, što je ODMAH uneseno kao NOVI
+  `react-hooks/set-state-in-effect` lint problem (ista klasa već postojeće tech-debt greške u
+  navbar.tsx/search-content.tsx/home-content.tsx) — ispravljeno na pravi React-dokumentacijski obrazac
+  (state adjustment tokom rendera preko `prevActionModal` poređenja) prije nego je ušlo u kod. `npx tsc
+  --noEmit` i `npx eslint .` čisti (identične 6 pre-existing grešaka kao prije Faze 1, nijedna nova),
+  sve 4 stavke ponovo live-testirane u browseru.
+- **§16.2 Faza 2** (posebna runda, POSLIJE Faze 1, veći/rizičniji zahvat, ČEKA "kreni"): rastavljanje
+  4 "god-komponente" (600-870 linija) i izvlačenje poslovne logike/validacije u `lib/` — prava
   popravka za mobile-ready separaciju
 
-Nakon §16 (obje faze): nastavak backend faze (§0 PAUZIRAN dok se eksplicitno ne zatraži, počinje se
-od §1) ili nova frontend stavka.
+Nakon §16.2: nastavak backend faze (§0 PAUZIRAN dok se eksplicitno ne zatraži, počinje se od §1) ili
+nova frontend stavka.
 
 **Šta ostaje van V1 frontend obima** (nije "ekran" iz liste od 15, nego stvarni backend/funkcionalni
 rad): pravi auth (Sanctum token, sesija, Navbar "ulogovan" state), migracije/modeli, booking engine
@@ -996,10 +1021,10 @@ refaktor) — Faza 2 se namjerno radi POSLIJE Faze 1 da refaktor krene na već o
 pokretnih dijelova odjednom). Obje faze su dogovorene i dokumentovane sad; izvršenje čeka eksplicitno
 "kreni" po fazi.
 
-### 16.1 Faza 1 — 2 stvarna bug-a + 6 duplikata koda — [ ] ČEKA "KRENI"
+### 16.1 Faza 1 — 2 stvarna bug-a + 6 duplikata koda — [x] GOTOVO (2026-09-18)
 
-**Bug A — prošli termini danas ostaju "slobodni" u booking wizardu — [ ]**
-- [ ] `lib/api/availability.ts:26-28,64` — `dateKey()` koristi `date.toISOString().slice(0,10)`, što
+**Bug A — prošli termini danas ostaju "slobodni" u booking wizardu — [x]**
+- [x] `lib/api/availability.ts:26-28,64` — `dateKey()` koristi `date.toISOString().slice(0,10)`, što
       konvertuje u UTC prije sječenja datuma — isti bug klase kao već jednom popravljen u
       `lib/api/bookings.ts`. Za BiH (UTC+1/+2), `dateKey(izabraniDatum) !== dateKey(sada)` skoro cijeli
       dan, pa `isToday` (linija 64) ispadne `false` iako je stvarno danas → provjera `if (isToday &&
@@ -1007,12 +1032,13 @@ pokretnih dijelova odjednom). Obje faze su dogovorene i dokumentovane sad; izvr�
       klikabilni. Scenario: klijent otvori zakazivanje u 15:00 za "danas", vidi 09:00/10:00 kao
       dostupne. `components/owner/new-appointment-modal.tsx:99` ima ISPRAVNU verziju iste provjere
       (`date.toDateString() === now.toDateString()`) — bug je izolovan na `availability.ts`.
-- [ ] Fix: zamijeniti `dateKey()` da gradi lokalni "YYYY-MM-DD" string ručno (`getFullYear()`/
+- [x] Fix: zamijeniti `dateKey()` da gradi lokalni "YYYY-MM-DD" string ručno (`getFullYear()`/
       `getMonth()`/`getDate()`), bez `toISOString()` — isti obrazac kao postojeći fix u
-      `lib/api/bookings.ts` i komentar u `dashboard-content.tsx:331`.
+      `lib/api/bookings.ts` i komentar u `dashboard-content.tsx:331`. Potvrđeno u browser konzoli:
+      simulacija 00:30 lokalno (UTC+2) — stari kod vraćao "prethodni dan", novi ispravan dan.
 
-**Bug B — pad aplikacije pri uzastopnom pomjeranju termina — [ ]**
-- [ ] `components/owner/dashboard-content.tsx:338,828,850,852` — `moveChoice` (`useState(0)`) se nikad
+**Bug B — pad aplikacije pri uzastopnom pomjeranju termina — [x]**
+- [x] `components/owner/dashboard-content.tsx:338,828,850,852` — `moveChoice` (`useState(0)`) se nikad
       ne resetuje kad se "Pomjeri" modal otvori za NOVI termin ili zatvori — mijenja se samo klikom na
       slot (linija 828). `moveSlots` (max 4 stavke, `useMemo` po `modalBooking`) se računa PO
       REZERVACIJI. Scenario: vlasnik otvori "Pomjeri" za termin A (4 ponuđena slota), klikne 4. opciju
@@ -1020,66 +1046,83 @@ pokretnih dijelova odjednom). Obje faze su dogovorene i dokumentovane sad; izvr�
       (`moveSlots.length === 1`). `moveChoice` je i dalje `3`. Dugme "Potvrdi" NIJE disabled (guard na
       liniji 850 provjerava samo `moveSlots.length === 0`) → klik izvršava `moveSlots[3].iso` →
       `moveSlots[3]` je `undefined` → `TypeError`, ruši taj dio dashboarda.
-- [ ] Fix: resetovati `setMoveChoice(0)` pri otvaranju/zatvaranju "move" akcionog modala, i dodati
-      `moveChoice >= moveSlots.length` u `disabled` uslov kao dodatnu zaštitu.
+- [x] Fix: resetovati `setMoveChoice(0)` pri otvaranju/zatvaranju "move" akcionog modala, i dodati
+      `moveChoice >= moveSlots.length` u `disabled` uslov kao dodatnu zaštitu. Implementirano kroz nove
+      `openActionModal()`/`closeActionModal()` helpere koji zamjenjuju direktne `setActionModal(...)`
+      pozive — resetuju `moveChoice` na oba mjesta (otvaranje i sva 3 zatvaranja: dismiss, i uspješan
+      confirm/cancel/no-show/move). Uživo testirano u browseru (Zahtjevi tab, 2 uzastopna "Pomjeri" na
+      različitim terminima) — bez konzolnih grešaka.
 
-**Duplikat 1 — `initials(ime)` — 5+ nezavisnih implementacija, jedna DRIFTOVANA — [ ]**
-- [ ] Postoji `initialsFromName` u `lib/session.ts` ali ga niko drugi ne koristi. Kopije: identične u
+**Duplikat 1 — `initials(ime)` — 5+ nezavisnih implementacija, jedna DRIFTOVANA — [x]**
+- [x] Postoji `initialsFromName` u `lib/session.ts` ali ga niko drugi ne koristi. Kopije: identične u
       `components/owner/salon-setup-content.tsx` (`initials()`), `components/owner/
       client-history-content.tsx` (`initialsOf()`), `components/client/client-profile-content.tsx`
       (inline, fali `.filter(Boolean)`); DRIFT u `components/owner/dashboard-content.tsx`
       (`initialsOf()` — fali `.filter(Boolean)` I `.toUpperCase()`, inicijali ispadaju malim slovima);
       inline bez helpera u `components/owner/statistics-content.tsx`,
       `components/booking/booking-wizard.tsx` (2x), `components/invite/worker-invite-content.tsx`
-- [ ] Fix: premjestiti `initialsFromName` iz `lib/session.ts` u `lib/format.ts` (prirodnije mjesto —
-      generički prikazni helper; `lib/session.ts` importuje odatle), zamijeniti svih 7+ kopija. Usput
-      (isti fajl se ionako dira): dodati mali `firstName(name)` helper u `lib/format.ts` i zamijeniti
-      5 ad-hoc `name.split(" ")[0]` ponavljanja (navbar.tsx, staff-card.tsx, dashboard-content.tsx,
-      booking-wizard.tsx ×2) — nisko-rizično, nije poseban bug, samo se nadovezuje na isti posao.
+- [x] Fix: premjestiti `initialsFromName` u `lib/format.ts` (`lib/session.ts` je izgubio svoj lokalni
+      re-export čim se ispostavilo da mu ništa više ne treba — svi pozivaoci sad uvoze direktno iz
+      `lib/format.ts`), zamijeniti svih 7+ kopija. Usput dodan `firstName(name)` helper u
+      `lib/format.ts`, zamijenjeno 5 ad-hoc `name.split(" ")[0]` ponavljanja (navbar.tsx, staff-card.tsx
+      — lokalna varijabla preimenovana u `workerFirstName` da ne sjenči import, dashboard-content.tsx,
+      booking-wizard.tsx ×2, plus jedan dodatni poziv izvučen u `lastUsedWorkerName` konst radi
+      čitljivosti). Uzgred otkriveno i popravljeno: dashboard-content.tsx "Klijenti" tab i booking
+      wizard staff picker su imali JOŠ DVIJE odvojene inline `initials` implementacije koje plan nije
+      pobrojao (nisu bile "duplikat 5+" iz opisa, ali ista klasa problema) — sve sada kroz
+      `initialsFromName`.
 
-**Duplikat 2 — boja bedža statusa termina (`STATUS_TONE`) — 3 fajla, 2 RAZLIČITE šeme — [ ]**
-- [ ] `components/client/my-bookings-content.tsx:33-40` (klijent): `completed`→"info", `no_show`→
+**Duplikat 2 — boja bedža statusa termina (`STATUS_TONE`) — 3 fajla, 2 RAZLIČITE šeme — [x]**
+- [x] `components/client/my-bookings-content.tsx:33-40` (klijent): `completed`→"info", `no_show`→
       "warning". `components/owner/dashboard-content.tsx:82-89` i `components/owner/
       client-history-content.tsx:47-54` (vlasnik, 2/3 fajla): `completed`→"neutral", `no_show`→
       "danger". Stvarna vizuelna nekonzistentnost, ne samo duplikat — klijent i vlasnik vide drugu
       boju za isti status.
-- [ ] Fix: izdvojiti JEDNU `BOOKING_STATUS_TONE` mapu u `lib/format.ts`, uvezati na sva 3 mjesta.
-      Kanonska šema: vlasnička (`neutral`/`danger`) — većina fajlova (2/3) je već tako radila, i
-      "danger" za nedolazak je jasniji signal.
+- [x] Fix: izdvojiti JEDNU `BOOKING_STATUS_TONE` mapu u `lib/format.ts` (tipizirana preko
+      `BookingStatusTone` union, bez uvoza UI komponenti u `lib/` — čuva `lib/format.ts` React-free radi
+      §16.2 mobile-ready cilja), uvezati na sva 3 mjesta. Kanonska šema: vlasnička (`neutral`/`danger`).
 
-**Duplikat 3 — Modal overlay markup — identičan u 6 fajlova — [ ]**
-- [ ] `fixed inset-0 z-30 ... bg-[var(--overlay-scrim)] backdrop-blur-sm` ručno pisan u
+**Duplikat 3 — Modal overlay markup — identičan u 6 fajlova — [x]**
+- [x] `fixed inset-0 z-30 ... bg-[var(--overlay-scrim)] backdrop-blur-sm` ručno pisan u
       `components/owner/edit-service-modal.tsx`, `components/owner/invite-worker-modal.tsx`,
       `components/owner/new-appointment-modal.tsx`, i inline u `dashboard-content.tsx`,
       `client-history-content.tsx`, `components/client/my-bookings-content.tsx`.
-- [ ] Fix: novi `components/ui/modal-overlay.tsx` (wrapper div + centrirani slot), zamijeniti svih 6
-      mjesta.
+- [x] Fix: novi `components/ui/modal-overlay.tsx` (`<ModalOverlay className?>` wrapper + centrirani
+      slot, `cn()` merge za padding override), zamijeniti svih 6 mjesta. Dva padding-varijanta iz
+      originala (`p-4` vs `p-5`) sačuvana kroz `className="p-5"` override na 3 mjesta koja su ga imala.
 
-**Duplikat 4 — Toast/snackbar markup — identičan u 5 fajlova — [ ]**
-- [ ] Isti `fixed bottom-6 left-1/2 z-40 ... rounded-full bg-surface-inverse ... shadow-popover`
+**Duplikat 4 — Toast/snackbar markup — identičan u 5 fajlova — [x]**
+- [x] Isti `fixed bottom-6 left-1/2 z-40 ... rounded-full bg-surface-inverse ... shadow-popover`
       markup u `dashboard-content.tsx`, `client-history-content.tsx`, `salon-setup-content.tsx`,
       `components/client/client-profile-content.tsx`, `components/client/my-bookings-content.tsx`.
-- [ ] Fix: novi `components/ui/toast.tsx`, zamijeniti svih 5 mjesta.
+- [x] Fix: novi `components/ui/toast.tsx` (`<Toast message>`), zamijenjeno svih 5 planiranih mjesta +
+      2 DODATNA identična nalaza koje plan nije pobrojao: `components/auth/login-content.tsx` i
+      `components/auth/registration-content.tsx` (isti markup, ista prilika za dedup — obuhvaćeno u
+      istom prolazu). Ukupno 7 mjesta.
 
-**Duplikat 5 — `Role`/`Page` tip redefinisan nezavisno + naziv-kolizija — [ ]**
-- [ ] `Role = "owner"|"worker"` deklarisan nezavisno (identično, ali ne dijeljeno) u
+**Duplikat 5 — `Role`/`Page` tip redefinisan nezavisno + naziv-kolizija — [x]**
+- [x] `Role = "owner"|"worker"` deklarisan nezavisno (identično, ali ne dijeljeno) u
       `dashboard-content.tsx:50` i `client-history-content.tsx:43`; `dashboard-content.tsx:49` ima i
       `Page` tip bez parnjaka. Odvojeno: `components/auth/registration-content.tsx:34` ima NEPOVEZAN
       `Role = "klijent"|"vlasnik"` — različita domena, ali isto ime zbunjuje pri čitanju više fajlova.
-- [ ] Fix: premjestiti `Role`/`Page` u `types/entities.ts` (ili novi `types/dashboard.ts`), uvesti na
-      oba mjesta; preimenovati lokalni tip u `registration-content.tsx` u `RegistrationRole` (čisto
-      preimenovanje, bez promjene ponašanja).
+- [x] Fix: novi `types/dashboard.ts` (odvojeno od `types/entities.ts` — ovo su UI/view-state tipovi,
+      ne stvarni API entiteti) sa `Role`/`Page`, uvezeno na oba mjesta i u oba `page.tsx` konzumenta
+      (`app/[locale]/(owner)/dashboard/page.tsx`, `.../dashboard/klijenti/[ime]/page.tsx` — direktno iz
+      `types/dashboard`, ne re-eksportovano kroz content komponente); lokalni tip u
+      `registration-content.tsx` preimenovan u `RegistrationRole` (čisto preimenovanje).
 
-**Duplikat 6 — hardkodirana mock imena vlasnika/radnika — raw literali u 6+ fajlova — [ ]**
-- [ ] "Selma Hodžić"/"Lejla Hadžić" kao raw string literali u `dashboard-content.tsx`,
+**Duplikat 6 — hardkodirana mock imena vlasnika/radnika — raw literali u 6+ fajlova — [x]**
+- [x] "Selma Hodžić"/"Lejla Hadžić" kao raw string literali u `dashboard-content.tsx`,
       `client-history-content.tsx`, `statistics-content.tsx`, `worker-invite-content.tsx` (+ već
       postojeća `SESSION_NAMES` mapa u `login-content.tsx` iz §15.2).
-- [ ] Fix: premjestiti `SESSION_NAMES` u `lib/session.ts` (eksportovanu), zamijeniti raw literale u
-      sva 4 fajla pozivom na nju.
+- [x] Fix: premjestiti `SESSION_NAMES` u `lib/session.ts` (eksportovanu), zamijeniti raw literale u
+      sva 4 fajla + `login-content.tsx` sad uvozi odatle umjesto lokalne definicije. Uživo potvrđeno:
+      quick-login kao vlasnik → Navbar "Selma" (firstName), dashboard sidebar "Selma Hodžić", Radnici
+      tab initials "SH"/"AS"/"LH"/"MB".
 
-**Nakon svake stavke u Fazi 1:** `npx tsc --noEmit` čist, brza uživo provjera u browseru (posebno Bug
-A/B — zakazati termin "danas" poslijepodne da se vidi da prošli slotovi nestanu; simulirati scenario
-iz Bug B sa dva uzastopna "Pomjeri"), ekrani vizuelno identični (osim namjerne unifikacije boje
+**Nakon svake stavke u Fazi 1:** `npx tsc --noEmit` čist nakon svake (potvrđeno), uživo provjereno u
+browseru (dashboard Zahtjevi/Klijenti/Radnici tabovi, booking wizard, login quick-login, pretraga
+navbar) — bez konzolnih/server grešaka, ekrani vizuelno identični (osim namjerne unifikacije boje
 statusa).
 
 ### 16.2 Faza 2 — rastavljanje "god-komponenti" + izvlačenje poslovne logike u `lib/` — [ ] POSEBNA RUNDA, POSLIJE FAZE 1

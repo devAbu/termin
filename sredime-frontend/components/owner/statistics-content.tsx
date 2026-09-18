@@ -22,7 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatMonthShort, getEffectivePrice } from "@/lib/format";
+import { formatPrice, formatMonthShort, getEffectivePrice, initialsFromName } from "@/lib/format";
+import { SESSION_NAMES } from "@/lib/session";
 import type { BookingDetails } from "@/lib/api/bookings";
 import {
   getStatsRange,
@@ -182,7 +183,7 @@ export function StatisticsContent({
         </nav>
         <div className="flex-1" />
         <div className="flex flex-col gap-0.5 rounded-control bg-indigo-500 p-3">
-          <span className="text-sm font-semibold">Selma Hodžić</span>
+          <span className="text-sm font-semibold">{SESSION_NAMES.owner}</span>
           <span className="text-xs text-indigo-200">{t("viewingAsOwner")}</span>
         </div>
       </aside>
@@ -373,7 +374,7 @@ export function StatisticsContent({
                     <div key={r.workerId} className="grid grid-cols-1 gap-3 border-b border-border-subtle p-4 last:border-b-0 sm:grid-cols-[minmax(0,1.6fr)_repeat(3,auto)] lg:grid-cols-[minmax(0,1.5fr)_90px_120px_110px_minmax(120px,1fr)_auto] lg:items-center lg:gap-3 lg:p-4 lg:px-6">
                       <span className="flex min-w-0 items-center gap-3">
                         <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-subtle text-xs font-bold text-brand">
-                          {r.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                          {initialsFromName(r.name)}
                         </span>
                         <span className="flex min-w-0 flex-col">
                           <span className="truncate text-base font-semibold text-text-primary">{r.name}</span>

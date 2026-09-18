@@ -30,8 +30,9 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
+import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { pluralBs } from "@/lib/format";
+import { initialsFromName, pluralBs } from "@/lib/format";
 
 /** Placeholder identity until "Registracija vlasnika" (§3 u docs/PROGRESS.md) actually creates the Salon record this wizard would fill in. */
 const SALON_NAME = "Novi salon";
@@ -69,16 +70,6 @@ interface DayHours {
 
 let nextServiceId = 1000;
 let nextStaffId = 1000;
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
 
 export function SalonSetupContent() {
   const t = useTranslations("salonSetup");
@@ -363,7 +354,7 @@ export function SalonSetupContent() {
                 const badge = STAFF_BADGE[p.status];
                 return (
                   <div key={p.id} className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-3.5 rounded-control border border-border-subtle p-3.5 sm:grid-cols-[48px_minmax(0,1fr)_auto]">
-                    <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-brand-subtle text-base font-bold text-brand">{initials(p.name)}</span>
+                    <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-brand-subtle text-base font-bold text-brand">{initialsFromName(p.name)}</span>
                     <span className="flex min-w-0 flex-col gap-1">
                       <span className="text-base font-semibold text-text-primary">{p.name}</span>
                       <span className="text-sm text-text-secondary">{p.role}</span>
@@ -596,12 +587,7 @@ export function SalonSetupContent() {
         )}
       </main>
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-surface-inverse px-4.5 py-3 text-sm font-medium text-brand-on shadow-popover">
-          <Icon icon={Check} size={16} className="text-accent" />
-          {toast}
-        </div>
-      )}
+      {toast && <Toast message={toast} />}
     </div>
   );
 }

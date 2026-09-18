@@ -3,11 +3,12 @@ import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
+import { firstName } from "@/lib/format";
 import type { Worker } from "@/types/entities";
 
 export function StaffCard({ worker, onBook }: { worker: Worker; onBook: () => void }) {
   const t = useTranslations("salon");
-  const firstName = worker.name.split(" ")[0];
+  const workerFirstName = firstName(worker.name);
 
   return (
     <Card className="flex flex-col gap-3 p-4">
@@ -26,7 +27,7 @@ export function StaffCard({ worker, onBook }: { worker: Worker; onBook: () => vo
           {t("next")}: {worker.nextSlotLabel}
         </span>
         <Button type="button" variant="secondary" size="sm" onClick={onBook}>
-          {t("bookWithCta", { name: firstName })}
+          {t("bookWithCta", { name: workerFirstName })}
         </Button>
       </div>
     </Card>

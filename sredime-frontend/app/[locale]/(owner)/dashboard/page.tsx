@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { DashboardContent, type Page, type Role } from "@/components/owner/dashboard-content";
+import { DashboardContent } from "@/components/owner/dashboard-content";
+import type { Page, Role } from "@/types/dashboard";
 import { getSalonById } from "@/lib/api/salons";
 import { getWorkersBySalon } from "@/lib/api/workers";
 import { getServicesBySalon } from "@/lib/api/services";

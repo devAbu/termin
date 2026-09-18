@@ -10,6 +10,13 @@ export interface StoredSession {
   name: string;
 }
 
+/** Fixed mock identity per role — same person everywhere in the app (dashboard viewer chip, quick-login, client notes author, invite sender). */
+export const SESSION_NAMES: Record<SessionRole, string> = {
+  client: "Sanela Kovačević",
+  worker: "Lejla Hadžić",
+  owner: "Selma Hodžić",
+};
+
 const STORAGE_KEY = "sredime.session";
 
 export function getStoredSession(): StoredSession | null {
@@ -29,14 +36,4 @@ export function setStoredSession(session: StoredSession) {
 
 export function clearStoredSession() {
   window.localStorage.removeItem(STORAGE_KEY);
-}
-
-export function initialsFromName(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 }

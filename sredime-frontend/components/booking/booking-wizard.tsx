@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice } from "@/lib/format";
+import { firstName, formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice, initialsFromName } from "@/lib/format";
 import { computeSlots, countFreeSlots } from "@/lib/api/availability";
 import { CURRENT_CLIENT_ID, type BookingDetails } from "@/lib/api/bookings";
 import { pickFavoriteWorkerId, pickLastUsedWorkerId } from "@/lib/api/favorites";
@@ -96,6 +96,7 @@ export function BookingWizard({
 
   const favoriteWorkerId = serviceId != null ? pickFavoriteWorkerId(allFavorites, serviceId) : null;
   const lastUsedWorkerId = serviceId != null ? pickLastUsedWorkerId(clientBookings, serviceId) : null;
+  const lastUsedWorkerName = firstName(workers.find((w) => w.id === lastUsedWorkerId)?.name ?? "");
   const isFavoriteEligible = favoriteWorkerId != null && eligibleWorkers.some((w) => w.id === favoriteWorkerId);
   const showFavoriteCard = isFavoriteEligible && !revealAllWorkers;
   const alreadyFavorite = worker != null && favoriteWorkerId === worker.id;
@@ -418,7 +419,7 @@ export function BookingWizard({
                               {t("staffFavoriteBadge")}
                             </span>
                             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 text-base font-bold text-indigo-400">
-                              {favWorker.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                              {initialsFromName(favWorker.name)}
                             </span>
                             <span className="flex flex-col gap-0.5">
                               <span className="text-base font-bold text-text-primary">{favWorker.name}</span>
@@ -426,7 +427,7 @@ export function BookingWizard({
                             </span>
                             <div className="flex flex-wrap justify-center gap-2 pt-1">
                               <Button type="button" variant="accent" size="md" onClick={() => pickWorker(favWorker.id)}>
-                                {t("staffContinueWith", { name: favWorker.name.split(" ")[0] })}
+                                {t("staffContinueWith", { name: firstName(favWorker.name) })}
                               </Button>
                               <Button type="button" variant="secondary" size="md" onClick={() => setRevealAllWorkers(true)}>
                                 {t("staffChangeWorker")}
@@ -440,7 +441,7 @@ export function BookingWizard({
                         {!favoriteWorkerId && lastUsedWorkerId != null && (
                           <span className="inline-flex w-fit items-center gap-1.5 rounded-pill bg-brand-subtle px-3 py-1.5 text-xs font-medium text-brand">
                             <Icon icon={Check} size={13} />
-                            {t("staffSuggestedNote", { name: workers.find((w) => w.id === lastUsedWorkerId)?.name.split(" ")[0] ?? "" })}
+                            {t("staffSuggestedNote", { name: lastUsedWorkerName })}
                           </span>
                         )}
                         <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
@@ -469,7 +470,7 @@ export function BookingWizard({
                               )}
                             >
                               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-400">
-                                {w.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                                {initialsFromName(w.name)}
                               </span>
                               <span className="text-sm font-bold text-text-primary">{w.name}</span>
                               <span className="text-xs text-text-secondary">{w.position}</span>

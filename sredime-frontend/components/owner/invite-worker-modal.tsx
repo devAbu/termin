@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
+import { ModalOverlay } from "@/components/ui/modal-overlay";
 
 export const WORKER_ROLES = ["Frizer / frizerka", "Barber", "Kozmetičar / kozmetičarka", "Manikir / pedikir", "Pomoćno osoblje"];
 
@@ -71,7 +72,7 @@ export function InviteWorkerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-sm">
+    <ModalOverlay>
       <div className="flex max-h-[92vh] w-full max-w-[480px] flex-col gap-4 overflow-y-auto rounded-modal bg-card p-6 shadow-modal">
         <div className="flex items-start gap-3">
           <div className="flex min-w-0 flex-col gap-1">
@@ -186,6 +187,6 @@ export function InviteWorkerModal({
           )}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
+import { initialsFromName } from "@/lib/format";
+import { SESSION_NAMES } from "@/lib/session";
 import type { Salon } from "@/types/entities";
 
 /**
@@ -17,7 +19,7 @@ import type { Salon } from "@/types/entities";
  * real token resolves to a real invited User + Salon.
  */
 const INVITEE = { name: "Ajla Zukić", email: "ajla@primjer.ba" };
-const OWNER_NAME = "Selma Hodžić";
+const OWNER_NAME = SESSION_NAMES.owner;
 
 type Stage = "form" | "done" | "expired";
 
@@ -130,7 +132,7 @@ export function WorkerInviteContent({ salon, token }: { salon: Salon; token: str
 
                   <div className="flex items-center gap-3.5">
                     <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-brand-subtle text-base font-bold text-brand">
-                      {INVITEE.name.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+                      {initialsFromName(INVITEE.name)}
                     </span>
                     <div className="flex min-w-0 flex-col gap-1.5">
                       <Button type="button" variant="secondary" size="sm" className="w-fit border-dashed">

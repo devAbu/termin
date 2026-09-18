@@ -7,7 +7,8 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { Logo } from "@/components/chrome/logo";
-import { clearStoredSession, getStoredSession, initialsFromName, type StoredSession } from "@/lib/session";
+import { clearStoredSession, getStoredSession, type StoredSession } from "@/lib/session";
+import { firstName, initialsFromName } from "@/lib/format";
 
 export function Navbar() {
   const t = useTranslations("nav");
@@ -57,7 +58,7 @@ export function Navbar() {
             {initialsFromName(session.name)}
           </span>
           <span className="hidden text-sm font-medium text-text-primary sm:inline">
-            {session.name.split(" ")[0]}
+            {firstName(session.name)}
           </span>
           <Button
             type="button"

@@ -106,3 +106,19 @@ const MONTHS_BS_GENITIVE = [
 export function formatMonthGenitive(date: Date): string {
   return MONTHS_BS_GENITIVE[date.getMonth()];
 }
+
+/** Up to 2 uppercase initials from a full name, e.g. "Sanela Kovačević" → "SK". */
+export function initialsFromName(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+/** First token of a full name, e.g. "Sanela Kovačević" → "Sanela". */
+export function firstName(name: string): string {
+  return name.split(" ")[0];
+}

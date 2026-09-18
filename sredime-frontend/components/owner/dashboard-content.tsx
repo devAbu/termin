@@ -31,8 +31,12 @@ import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge, type badgeVariants } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
+import { ModalOverlay } from "@/components/ui/modal-overlay";
+import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice, pluralBs } from "@/lib/format";
+import { firstName, formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice, initialsFromName, pluralBs } from "@/lib/format";
+import { BOOKING_STATUS_TONE } from "@/lib/booking-status";
+import { SESSION_NAMES } from "@/lib/session";
 import { hoursForDate } from "@/lib/api/availability";
 import {
   pickBookingsForDate,
@@ -44,10 +48,9 @@ import { NewAppointmentModal, type NewBookingInput } from "@/components/owner/ne
 import { InviteWorkerModal, type InvitePayload } from "@/components/owner/invite-worker-modal";
 import { EditServiceModal } from "@/components/owner/edit-service-modal";
 import type { Salon, Service, Worker, BookingStatus } from "@/types/entities";
+import type { Page, Role } from "@/types/dashboard";
 import type { VariantProps } from "class-variance-authority";
 
-export type Page = "kalendar" | "zahtjevi" | "klijenti" | "usluge" | "radnici" | "vrijeme" | "statistika";
-export type Role = "owner" | "worker";
 type BadgeTone = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
 type TeamStatus = "owner" | "active" | "invited" | "draft";
@@ -60,7 +63,7 @@ interface TeamMember {
   workerId?: number;
 }
 
-const OWNER_MEMBER: TeamMember = { id: -1, name: "Selma Hodžić", role: "Vlasnica salona", contact: "selma@studiolux.ba", status: "owner" };
+const OWNER_MEMBER: TeamMember = { id: -1, name: SESSION_NAMES.owner, role: "Vlasnica salona", contact: "selma@studiolux.ba", status: "owner" };
 
 const TEAM_BADGE: Record<TeamStatus, { tone: BadgeTone; icon: typeof Store; labelKey: string }> = {
   owner: { tone: "info", icon: Store, labelKey: "badgeOwner" },
@@ -69,24 +72,11 @@ const TEAM_BADGE: Record<TeamStatus, { tone: BadgeTone; icon: typeof Store; labe
   draft: { tone: "neutral", icon: Info, labelKey: "badgeDraft" },
 };
 
-function initialsOf(name: string) {
-  return name.split(" ").map((p) => p[0]).join("").slice(0, 2);
-}
-
 function contactFor(name: string, salon: Salon) {
-  const first = name.split(" ")[0].toLowerCase();
+  const first = firstName(name).toLowerCase();
   const domain = salon.name.toLowerCase().replace(/[^a-z0-9]+/g, "");
   return `${first}@${domain}.ba`;
 }
-
-const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
-  pending: "warning",
-  confirmed: "success",
-  completed: "neutral",
-  cancelled_by_client: "neutral",
-  cancelled_by_salon: "danger",
-  no_show: "danger",
-};
 
 const STATUS_ICON = {
   pending: Clock,
@@ -273,7 +263,7 @@ export function DashboardContent({
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-text-primary">{b.clientName}</span>
-            <Badge variant={STATUS_TONE[b.status]}>
+            <Badge variant={BOOKING_STATUS_TONE[b.status]}>
               <Icon icon={StatusIcon} size={11} />
               {tStatus(b.status)}
             </Badge>
@@ -336,6 +326,17 @@ export function DashboardContent({
     return out;
   }, [modalBooking, salon, allBookings]);
   const [moveChoice, setMoveChoice] = useState(0);
+  // Reset on every actionModal transition (open, close, switch to a different booking) — adjusted
+  // during render (React's recommended pattern for "state that depends on a changing value",
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  // rather than a useEffect, and tied to the modal's own identity rather than to each call site
+  // remembering to reset it, so a future exit path can't reintroduce the stale-index crash this
+  // once caused.
+  const [prevActionModal, setPrevActionModal] = useState(actionModal);
+  if (prevActionModal !== actionModal) {
+    setPrevActionModal(actionModal);
+    setMoveChoice(0);
+  }
 
   function handleNewBooking(input: NewBookingInput) {
     const iso = new Date(input.date);
@@ -405,7 +406,7 @@ export function DashboardContent({
         <div className="flex-1" />
         <div className="flex flex-col gap-2 rounded-control bg-indigo-500 p-3">
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">{isOwner ? "Selma Hodžić" : "Lejla Hadžić"}</span>
+            <span className="text-sm font-semibold">{isOwner ? SESSION_NAMES.owner : SESSION_NAMES.worker}</span>
             <span className="text-xs text-indigo-200">{isOwner ? t("viewingAsOwner") : t("viewingAsWorker")}</span>
           </div>
           <div className="flex gap-1.5">
@@ -520,7 +521,7 @@ export function DashboardContent({
                     onClick={() => setStaffFilter(w.id)}
                     className={cn("h-8 flex-none rounded-pill px-3.5 text-xs font-medium", staffFilter === w.id ? "bg-brand-subtle text-brand" : "border border-border-subtle bg-card text-text-secondary")}
                   >
-                    {w.name.split(" ")[0]}
+                    {firstName(w.name)}
                   </button>
                 ))}
               </div>
@@ -552,7 +553,7 @@ export function DashboardContent({
               {clients.map((c) => (
                 <div key={c.name} className="flex flex-wrap items-center gap-3 rounded-card bg-card p-4 shadow-card">
                   <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-brand-subtle text-sm font-bold text-brand">
-                    {c.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                    {initialsFromName(c.name)}
                   </span>
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -655,7 +656,7 @@ export function DashboardContent({
                         className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2.5 p-4 sm:grid-cols-[44px_minmax(0,1fr)_auto_auto] sm:gap-3.5"
                       >
                         <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-brand-subtle text-sm font-bold text-brand">
-                          {initialsOf(m.name)}
+                          {initialsFromName(m.name)}
                         </span>
                         <span className="flex min-w-0 flex-col gap-0.5">
                           <span className="font-bold text-text-primary">{m.name}</span>
@@ -794,7 +795,7 @@ export function DashboardContent({
       )}
 
       {actionModal && modalBooking && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-[var(--overlay-scrim)] p-5 backdrop-blur-sm">
+        <ModalOverlay className="p-5">
           <div className="flex w-full max-w-[420px] flex-col gap-4 rounded-modal bg-card p-6 shadow-modal">
             <span
               className={cn(
@@ -847,7 +848,7 @@ export function DashboardContent({
                 variant="destructive"
                 size="lg"
                 className="flex-1"
-                disabled={actionModal.type === "move" && moveSlots.length === 0}
+                disabled={actionModal.type === "move" && (moveSlots.length === 0 || moveChoice >= moveSlots.length)}
                 onClick={() => {
                   if (actionModal.type === "move") moveBooking(modalBooking.id, moveSlots[moveChoice].iso);
                   else if (actionModal.type === "cancel") setStatus(modalBooking.id, "cancelled_by_salon", t("cancelledToast"));
@@ -858,15 +859,10 @@ export function DashboardContent({
               </Button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-surface-inverse px-4.5 py-3 text-sm font-medium text-brand-on shadow-popover">
-          <Icon icon={Check} size={16} className="text-accent" />
-          {toast}
-        </div>
-      )}
+      {toast && <Toast message={toast} />}
     </div>
   );
 }

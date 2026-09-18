@@ -28,10 +28,11 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
+import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { CATEGORY_META, CITIES } from "@/lib/constants/categories";
 
-type Role = "klijent" | "vlasnik";
+type RegistrationRole = "klijent" | "vlasnik";
 type OwnerStep = 1 | 2 | 3;
 
 const CATEGORIES = Object.values(CATEGORY_META).map((c) => c.label);
@@ -40,7 +41,7 @@ export function RegistrationContent() {
   const t = useTranslations("registration");
   const router = useRouter();
 
-  const [role, setRole] = useState<Role>("klijent");
+  const [role, setRole] = useState<RegistrationRole>("klijent");
   const [step, setStep] = useState<OwnerStep>(1);
   const [done, setDone] = useState(false);
   const [terms, setTerms] = useState(true);
@@ -63,7 +64,7 @@ export function RegistrationContent() {
     setTimeout(() => setToast((cur) => (cur === msg ? null : cur)), 2600);
   }
 
-  function selectRole(r: Role) {
+  function selectRole(r: RegistrationRole) {
     setRole(r);
     setStep(1);
     setDone(false);
@@ -443,12 +444,7 @@ export function RegistrationContent() {
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-surface-inverse px-4.5 py-3 text-sm font-medium text-brand-on shadow-popover">
-          <Icon icon={Check} size={16} className="text-accent" />
-          {toast}
-        </div>
-      )}
+      {toast && <Toast message={toast} />}
     </div>
   );
 }

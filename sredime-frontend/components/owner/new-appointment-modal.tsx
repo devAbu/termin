@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
+import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { cn } from "@/lib/utils";
 import { formatPrice, formatWeekdayShort, getEffectivePrice } from "@/lib/format";
 import { hoursForDate } from "@/lib/api/availability";
@@ -126,7 +127,7 @@ export function NewAppointmentModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-sm">
+    <ModalOverlay>
       <div className="flex max-h-[92vh] w-full max-w-[560px] flex-col gap-5 overflow-y-auto rounded-modal bg-card p-6 shadow-modal">
         <div className="flex items-center justify-between">
           <span className="text-xl font-bold tracking-tight text-text-primary">{t("newApptTitle")}</span>
@@ -281,6 +282,6 @@ export function NewAppointmentModal({
           </Button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

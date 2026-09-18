@@ -18,26 +18,18 @@ import { Link } from "@/i18n/navigation";
 import { Navbar } from "@/components/chrome/navbar";
 import { Footer } from "@/components/chrome/footer";
 import { Button } from "@/components/ui/button";
-import { Badge, type badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
+import { ModalOverlay } from "@/components/ui/modal-overlay";
+import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { formatPrice, formatWeekdayShort, formatMonthShort, getEffectivePrice } from "@/lib/format";
+import { BOOKING_STATUS_TONE } from "@/lib/booking-status";
 import type { BookingDetails } from "@/lib/api/bookings";
 import type { BookingStatus } from "@/types/entities";
-import type { VariantProps } from "class-variance-authority";
 
 type Tab = "upcoming" | "history";
-type BadgeTone = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
-
-const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
-  pending: "warning",
-  confirmed: "success",
-  completed: "info",
-  cancelled_by_client: "neutral",
-  cancelled_by_salon: "danger",
-  no_show: "warning",
-};
 
 function upcomingWord(n: number, t: (key: string) => string) {
   if (n === 1) return t("upcomingOne");
@@ -190,7 +182,7 @@ export function MyBookingsContent({
                       <div className="flex min-w-0 flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-lg font-bold tracking-tight text-text-primary">{b.service.name}</span>
-                          <Badge variant={STATUS_TONE[b.status]}>{tStatus(b.status)}</Badge>
+                          <Badge variant={BOOKING_STATUS_TONE[b.status]}>{tStatus(b.status)}</Badge>
                         </div>
                         <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                           <span className="inline-flex items-center gap-1.5 text-sm text-text-secondary">
@@ -277,7 +269,7 @@ export function MyBookingsContent({
                         <Icon icon={Calendar} size={14} className="text-icon-muted" />
                         {when}
                       </span>
-                      <Badge variant={STATUS_TONE[h.status]}>{tStatus(h.status)}</Badge>
+                      <Badge variant={BOOKING_STATUS_TONE[h.status]}>{tStatus(h.status)}</Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-2.5 md:justify-end">
                       <span className="price text-base">{formatPrice(getEffectivePrice(h.service.price, h.service.discountPercent))}</span>
@@ -320,7 +312,7 @@ export function MyBookingsContent({
       <Footer />
 
       {cancelTarget && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-[var(--overlay-scrim)] p-5 backdrop-blur-sm">
+        <ModalOverlay className="p-5">
           <div className="flex w-full max-w-[400px] flex-col gap-4 rounded-modal bg-card p-6 shadow-modal">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-danger-bg text-danger-fg">
               <Icon icon={TriangleAlert} size={22} />
@@ -348,15 +340,10 @@ export function MyBookingsContent({
               </Button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-surface-inverse px-4.5 py-3 text-sm font-medium text-brand-on shadow-popover">
-          <Icon icon={Check} size={16} className="text-accent" />
-          {toast}
-        </div>
-      )}
+      {toast && <Toast message={toast} />}
     </div>
   );
 }

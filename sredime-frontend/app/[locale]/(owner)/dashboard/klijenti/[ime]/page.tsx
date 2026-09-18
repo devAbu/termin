@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ClientHistoryContent, type Role } from "@/components/owner/client-history-content";
+import { ClientHistoryContent } from "@/components/owner/client-history-content";
+import type { Role } from "@/types/dashboard";
 import { getSalonById } from "@/lib/api/salons";
 import { getWorkersBySalon } from "@/lib/api/workers";
 import { getServicesBySalon } from "@/lib/api/services";

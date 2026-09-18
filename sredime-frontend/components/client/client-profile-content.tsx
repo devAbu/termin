@@ -9,7 +9,8 @@ import { Footer } from "@/components/chrome/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
-import { formatMonthGenitive } from "@/lib/format";
+import { Toast } from "@/components/ui/toast";
+import { formatMonthGenitive, initialsFromName } from "@/lib/format";
 import type { User } from "@/types/entities";
 
 export function ClientProfileContent({ user }: { user: User }) {
@@ -65,12 +66,7 @@ export function ClientProfileContent({ user }: { user: User }) {
     flash(t("passwordChangedToast"));
   }
 
-  const initials = name
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = initialsFromName(name);
   const joined = new Date(user.createdAt);
 
   return (
@@ -222,12 +218,7 @@ export function ClientProfileContent({ user }: { user: User }) {
 
       <Footer />
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-surface-inverse px-4.5 py-3 text-sm font-medium text-brand-on shadow-popover">
-          <Icon icon={Check} size={16} className="text-accent" />
-          {toast}
-        </div>
-      )}
+      {toast && <Toast message={toast} />}
     </div>
   );
 }

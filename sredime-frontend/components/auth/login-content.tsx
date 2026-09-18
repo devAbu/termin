@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarCheck, Check, Eye, EyeOff, Globe, Apple, Info, Repeat, Store, TriangleAlert, User, Users } from "lucide-react";
+import { CalendarCheck, Eye, EyeOff, Globe, Apple, Info, Repeat, Store, TriangleAlert, User, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Logo } from "@/components/chrome/logo";
@@ -9,16 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
-import { setStoredSession, type SessionRole } from "@/lib/session";
-
-// Isti identitet kao dashboard viewer chip (components/owner/dashboard-content.tsx) za
-// worker/owner, i CURRENT_CLIENT_ID (lib/api/bookings.ts, "Sanela Kovačević") za client —
-// vidi PROGRESS.md §15.2.
-const SESSION_NAMES: Record<SessionRole, string> = {
-  client: "Sanela Kovačević",
-  worker: "Lejla Hadžić",
-  owner: "Selma Hodžić",
-};
+import { Toast } from "@/components/ui/toast";
+import { SESSION_NAMES, setStoredSession, type SessionRole } from "@/lib/session";
 
 export function LoginContent() {
   const t = useTranslations("login");
@@ -234,12 +226,7 @@ export function LoginContent() {
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-surface-inverse px-4.5 py-3 text-sm font-medium text-brand-on shadow-popover">
-          <Icon icon={Check} size={16} className="text-accent" />
-          {toast}
-        </div>
-      )}
+      {toast && <Toast message={toast} />}
     </div>
   );
 }

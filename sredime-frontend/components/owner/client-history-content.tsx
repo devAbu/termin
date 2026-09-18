@@ -29,29 +29,24 @@ import { Button } from "@/components/ui/button";
 import { Badge, type badgeVariants } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
+import { ModalOverlay } from "@/components/ui/modal-overlay";
+import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatMonthShort, getEffectivePrice } from "@/lib/format";
+import { formatPrice, formatMonthShort, getEffectivePrice, initialsFromName } from "@/lib/format";
+import { BOOKING_STATUS_TONE } from "@/lib/booking-status";
+import { SESSION_NAMES } from "@/lib/session";
 import type { BookingDetails, SalonClientSummary } from "@/lib/api/bookings";
 import { NewAppointmentModal, type NewBookingInput } from "@/components/owner/new-appointment-modal";
 import type { ClientNote, Salon, Service, Worker, BookingStatus } from "@/types/entities";
+import type { Role } from "@/types/dashboard";
 import type { VariantProps } from "class-variance-authority";
 
 /** Spec default (docs/specifikacija.md §3.2) — configurable per salon in a real backend, fixed here like dashboard's 30-day no-show KPI. */
 const NO_SHOW_THRESHOLD = 3;
 const NO_SHOW_WINDOW_DAYS = 90;
 
-export type Role = "owner" | "worker";
 type BadgeTone = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 type HistoryFilter = "all" | "completed" | "cancelled" | "no_show";
-
-const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
-  pending: "warning",
-  confirmed: "success",
-  completed: "neutral",
-  cancelled_by_client: "neutral",
-  cancelled_by_salon: "danger",
-  no_show: "danger",
-};
 
 const STATUS_ICON = {
   pending: Clock,
@@ -70,16 +65,6 @@ function timeOf(iso: string) {
 function dateLabel(iso: string) {
   const d = new Date(iso);
   return `${d.getDate()}. ${formatMonthShort(d)} ${d.getFullYear()}.`;
-}
-
-function initialsOf(name: string) {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 }
 
 let nextLocalId = 200000;
@@ -199,7 +184,7 @@ export function ClientHistoryContent({
       id: nextLocalNoteId++,
       salonId: salon.id,
       clientName,
-      authorName: isOwner ? "Selma Hodžić" : "Lejla Hadžić",
+      authorName: isOwner ? SESSION_NAMES.owner : SESSION_NAMES.worker,
       text: draft.trim(),
       createdAt: new Date().toISOString(),
     };
@@ -303,7 +288,7 @@ export function ClientHistoryContent({
         <div className="flex-1" />
         <div className="flex flex-col gap-2 rounded-control bg-indigo-500 p-3">
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">{isOwner ? "Selma Hodžić" : "Lejla Hadžić"}</span>
+            <span className="text-sm font-semibold">{isOwner ? SESSION_NAMES.owner : SESSION_NAMES.worker}</span>
             <span className="text-xs text-indigo-200">{isOwner ? t("viewingAsOwner") : t("viewingAsWorker")}</span>
           </div>
           <div className="flex gap-1.5">
@@ -358,7 +343,7 @@ export function ClientHistoryContent({
         <main className="flex flex-1 flex-col gap-5 p-4 lg:p-6">
           <div className="flex flex-wrap items-center gap-4 rounded-card bg-card p-4 shadow-card lg:p-6">
             <span className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-brand-subtle text-xl font-bold text-brand lg:h-16 lg:w-16">
-              {initialsOf(clientName)}
+              {initialsFromName(clientName)}
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <div className="flex flex-wrap items-center gap-2.5">
@@ -479,7 +464,7 @@ export function ClientHistoryContent({
                         <span className="font-medium text-text-primary">{b.service.name}</span>
                         <span className="text-sm text-text-secondary">{b.worker.name}</span>
                       </span>
-                      <Badge variant={STATUS_TONE[b.status]} className="justify-self-start">
+                      <Badge variant={BOOKING_STATUS_TONE[b.status]} className="justify-self-start">
                         <Icon icon={StatusIcon} size={11} />
                         {tStatus(b.status)}
                       </Badge>
@@ -547,7 +532,7 @@ export function ClientHistoryContent({
                     <span className="text-base font-bold text-danger-fg">{tc("blockedPanelTitle")}</span>
                   </span>
                   <span className="text-sm leading-relaxed text-text-secondary">
-                    {tc("blockedPanelBody", { salon: salon.name, author: isOwner ? "Selma Hodžić" : "Lejla Hadžić", date: dateLabel(now.toISOString()) })}
+                    {tc("blockedPanelBody", { salon: salon.name, author: isOwner ? SESSION_NAMES.owner : SESSION_NAMES.worker, date: dateLabel(now.toISOString()) })}
                   </span>
                   <Button type="button" variant="secondary" size="md" className="self-start" onClick={unblock}>
                     {tc("unblockCta")}
@@ -561,7 +546,7 @@ export function ClientHistoryContent({
                     <Icon icon={Send} size={16} className="text-warning-fg" />
                     <span className="text-base font-bold text-warning-fg">{tc("proposalPanelTitle")}</span>
                   </span>
-                  <span className="text-sm leading-relaxed text-text-secondary">{tc("proposalPanelBody", { owner: "Selma Hodžić" })}</span>
+                  <span className="text-sm leading-relaxed text-text-secondary">{tc("proposalPanelBody", { owner: SESSION_NAMES.owner })}</span>
                 </div>
               )}
             </div>
@@ -582,7 +567,7 @@ export function ClientHistoryContent({
       )}
 
       {dialogOpen && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-[var(--overlay-scrim)] p-5 backdrop-blur-sm">
+        <ModalOverlay className="p-5">
           <div className="flex w-full max-w-[420px] flex-col gap-4 rounded-modal bg-card p-6 shadow-modal">
             <span className={cn("flex h-11 w-11 items-center justify-center rounded-full", dialogCopy.iconBg, dialogCopy.iconFg)}>
               <Icon icon={canBlock ? Ban : Send} size={22} />
@@ -609,15 +594,10 @@ export function ClientHistoryContent({
               </Button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-surface-inverse px-4.5 py-3 text-sm font-medium text-brand-on shadow-popover">
-          <Icon icon={Check} size={16} className="text-accent" />
-          {toast}
-        </div>
-      )}
+      {toast && <Toast message={toast} />}
     </div>
   );
 }
