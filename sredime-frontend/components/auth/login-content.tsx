@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarCheck, Check, Eye, EyeOff, Globe, Apple, Info, Repeat, Store, User } from "lucide-react";
+import { CalendarCheck, Check, Eye, EyeOff, Globe, Apple, Info, Repeat, Store, TriangleAlert, User, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Logo } from "@/components/chrome/logo";
@@ -25,9 +25,13 @@ export function LoginContent() {
     setTimeout(() => setToast((cur) => (cur === msg ? null : cur)), 2600);
   }
 
-  function goToBookings(msg: string) {
+  function goToPath(path: string, msg: string) {
     flash(msg);
-    setTimeout(() => router.push("/moji-termini"), 800);
+    setTimeout(() => router.push(path), 800);
+  }
+
+  function goToBookings(msg: string) {
+    goToPath("/moji-termini", msg);
   }
 
   function handleLogin() {
@@ -36,6 +40,18 @@ export function LoginContent() {
       return;
     }
     goToBookings(t("loginToast"));
+  }
+
+  // DEV-ONLY: privremena brza prijava za testiranje UI-ja bez pravog auth sistema.
+  // Ukloniti/zamijeniti pravim login flow-om (Sanctum token + role iz backend odgovora) prije produkcije.
+  function quickLogin(role: "client" | "worker" | "owner") {
+    if (role === "client") {
+      goToPath("/moji-termini", t("quickLoginClientToast"));
+    } else if (role === "worker") {
+      goToPath("/dashboard?role=worker", t("quickLoginWorkerToast"));
+    } else {
+      goToPath("/dashboard?role=owner", t("quickLoginOwnerToast"));
+    }
   }
 
   const asidePoints = [
@@ -159,6 +175,31 @@ export function LoginContent() {
             <div className="flex items-start gap-2.5 rounded-control bg-surface-sunken px-4 py-3.5">
               <Icon icon={Info} size={16} className="mt-0.5 flex-none text-icon-muted" />
               <span className="text-xs leading-relaxed text-text-secondary">{t("infoBanner")}</span>
+            </div>
+
+            {/* DEV-ONLY: privremeni test shortcuts, bez pravog auth-a. Ukloniti prije produkcije. */}
+            <div className="flex flex-col gap-3 rounded-card border border-dashed border-warning-border bg-warning-bg p-4">
+              <div className="flex items-start gap-2.5">
+                <Icon icon={TriangleAlert} size={16} className="mt-0.5 flex-none text-warning-fg" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-bold text-warning-fg">{t("quickLoginTitle")}</span>
+                  <span className="text-xs leading-relaxed text-warning-fg/80">{t("quickLoginBody")}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Button type="button" variant="secondary" size="md" onClick={() => quickLogin("client")}>
+                  <Icon icon={User} size={16} />
+                  {t("quickLoginClient")}
+                </Button>
+                <Button type="button" variant="secondary" size="md" onClick={() => quickLogin("worker")}>
+                  <Icon icon={Users} size={16} />
+                  {t("quickLoginWorker")}
+                </Button>
+                <Button type="button" variant="secondary" size="md" onClick={() => quickLogin("owner")}>
+                  <Icon icon={Store} size={16} />
+                  {t("quickLoginOwner")}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

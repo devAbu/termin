@@ -7,7 +7,6 @@ import {
   Check,
   Clock,
   MapPin,
-  Pencil,
   Repeat,
   Star,
   Store,
@@ -282,14 +281,20 @@ export function MyBookingsContent({
                     </div>
                     <div className="flex flex-wrap items-center gap-2.5 md:justify-end">
                       <span className="price text-base">{formatPrice(getEffectivePrice(h.service.price, h.service.discountPercent))}</span>
-                      {h.status === "completed" && (
-                        <Button asChild variant="secondary" size="sm">
-                          <Link href={`/moji-termini/${h.id}/recenzija`}>
-                            <Icon icon={reviewed ? Pencil : Star} size={14} />
-                            {reviewed ? t("editReview") : t("leaveReview")}
-                          </Link>
-                        </Button>
-                      )}
+                      {h.status === "completed" &&
+                        (reviewed ? (
+                          <span className="inline-flex items-center gap-1.5 px-1 text-sm font-medium text-text-secondary">
+                            <Icon icon={Check} size={14} className="text-success-fg" />
+                            {t("reviewSubmitted")}
+                          </span>
+                        ) : (
+                          <Button asChild variant="secondary" size="sm">
+                            <Link href={`/moji-termini/${h.id}/recenzija`}>
+                              <Icon icon={Star} size={14} />
+                              {t("leaveReview")}
+                            </Link>
+                          </Button>
+                        ))}
                       <Button asChild variant="primary" size="sm">
                         <Link href={`/saloni/${h.salon.slug}/zakazi?usluga=${h.service.id}&radnik=${h.worker.id}`}>
                           <Icon icon={Repeat} size={14} />

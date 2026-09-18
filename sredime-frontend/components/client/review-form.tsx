@@ -28,12 +28,14 @@ export function ReviewForm({
   const tStatus = useTranslations("bookingStatus");
   const router = useRouter();
 
-  const [rating, setRating] = useState(existingReview?.rating ?? 0);
+  const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
-  const [comment, setComment] = useState(existingReview?.comment ?? "");
+  const [comment, setComment] = useState("");
   const [stage, setStage] = useState<"form" | "done">("form");
 
-  const blocked = booking.status !== "completed";
+  const notCompleted = booking.status !== "completed";
+  const alreadyReviewed = !notCompleted && existingReview != null;
+  const blocked = notCompleted || alreadyReviewed;
   const shown = hover || rating;
   const scheduled = new Date(booking.scheduledAt);
   const when = `${scheduled.getDate()}. ${formatMonthShort(scheduled)} ${scheduled.getFullYear()}, ${String(scheduled.getHours()).padStart(2, "0")}:${String(scheduled.getMinutes()).padStart(2, "0")}`;
@@ -81,7 +83,26 @@ export function ReviewForm({
             </div>
           </div>
 
-          {blocked ? (
+          {alreadyReviewed && existingReview ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start gap-3 rounded-control bg-warning-bg p-4">
+                <Icon icon={TriangleAlert} size={20} className="mt-0.5 flex-none text-warning-fg" />
+                <div className="flex flex-col gap-1">
+                  <span className="text-base font-bold text-warning-fg">{t("alreadyReviewedTitle")}</span>
+                  <span className="text-sm leading-relaxed text-text-secondary">{t("alreadyReviewedBody")}</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 rounded-control bg-surface-sunken p-3.5">
+                <StarRating rating={existingReview.rating} showValue={false} />
+                {existingReview.comment && (
+                  <span className="text-sm leading-relaxed text-text-secondary">{existingReview.comment}</span>
+                )}
+              </div>
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/moji-termini">{t("understood")}</Link>
+              </Button>
+            </div>
+          ) : notCompleted ? (
             <div className="flex flex-col gap-4">
               <div className="flex items-start gap-3 rounded-control bg-warning-bg p-4">
                 <Icon icon={TriangleAlert} size={20} className="mt-0.5 flex-none text-warning-fg" />

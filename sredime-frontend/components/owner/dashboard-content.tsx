@@ -375,7 +375,7 @@ export function DashboardContent({
   const pendingInvites = team.filter((m) => m.status === "invited").length;
 
   return (
-    <div className="flex min-h-full bg-surface-canvas">
+    <div className="flex min-h-screen bg-surface-canvas">
       <aside className="hidden w-60 flex-none flex-col gap-5 bg-surface-inverse p-4 text-brand-on lg:flex">
         <div className="flex flex-col gap-0.5 px-2 py-1">
           <span className="text-base font-bold tracking-tight">{salon.name}</span>
