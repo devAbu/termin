@@ -9,6 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
+import { setStoredSession, type SessionRole } from "@/lib/session";
+
+// Isti identitet kao dashboard viewer chip (components/owner/dashboard-content.tsx) za
+// worker/owner, i CURRENT_CLIENT_ID (lib/api/bookings.ts, "Sanela Kovačević") za client —
+// vidi PROGRESS.md §15.2.
+const SESSION_NAMES: Record<SessionRole, string> = {
+  client: "Sanela Kovačević",
+  worker: "Lejla Hadžić",
+  owner: "Selma Hodžić",
+};
 
 export function LoginContent() {
   const t = useTranslations("login");
@@ -39,12 +49,19 @@ export function LoginContent() {
       flash(t("missingFieldsToast"));
       return;
     }
+    setStoredSession({ role: "client", name: SESSION_NAMES.client });
     goToBookings(t("loginToast"));
+  }
+
+  function handleSocialLogin(msg: string) {
+    setStoredSession({ role: "client", name: SESSION_NAMES.client });
+    goToBookings(msg);
   }
 
   // DEV-ONLY: privremena brza prijava za testiranje UI-ja bez pravog auth sistema.
   // Ukloniti/zamijeniti pravim login flow-om (Sanctum token + role iz backend odgovora) prije produkcije.
-  function quickLogin(role: "client" | "worker" | "owner") {
+  function quickLogin(role: SessionRole) {
+    setStoredSession({ role, name: SESSION_NAMES[role] });
     if (role === "client") {
       goToPath("/moji-termini", t("quickLoginClientToast"));
     } else if (role === "worker") {
@@ -153,11 +170,11 @@ export function LoginContent() {
                   <span className="h-px flex-1 bg-border-subtle" />
                 </div>
                 <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  <Button type="button" variant="secondary" size="lg" onClick={() => goToBookings(t("googleToast"))}>
+                  <Button type="button" variant="secondary" size="lg" onClick={() => handleSocialLogin(t("googleToast"))}>
                     <Icon icon={Globe} size={18} />
                     {t("socialGoogle")}
                   </Button>
-                  <Button type="button" variant="secondary" size="lg" onClick={() => goToBookings(t("appleToast"))}>
+                  <Button type="button" variant="secondary" size="lg" onClick={() => handleSocialLogin(t("appleToast"))}>
                     <Icon icon={Apple} size={18} />
                     {t("socialApple")}
                   </Button>

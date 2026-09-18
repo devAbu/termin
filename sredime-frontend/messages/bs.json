@@ -4,7 +4,10 @@
     "myBookings": "Moji termini",
     "forSalons": "Za salone",
     "login": "Prijavi se",
-    "register": "Registruj se"
+    "register": "Registruj se",
+    "openMenu": "Otvori meni",
+    "closeMenu": "Zatvori meni",
+    "logout": "Odjavi se"
   },
   "bookingStatus": {
     "pending": "Čeka potvrdu",

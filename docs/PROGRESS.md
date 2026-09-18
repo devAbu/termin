@@ -28,6 +28,20 @@ nam je fokus na FRONT (UI/UX)". Pun detalj svake stavke u **§14** ispod:
 sesije. Sljedeći korak je ili nova frontend stavka (korisnikov zahtjev) ili nastavak backend faze
 (§0 PAUZIRAN dok se eksplicitno ne zatraži, počinje se od §1).
 
+**AŽURIRANO 2026-09-18:** ručni QA prolaz kroz cijelu aplikaciju (desktop + mobile) je gotov, 3 nova
+nalaza dogovorena kao sljedeći frontend rad — vidi **§15** za pun detalj i redoslijed:
+1. [x] Mobilni header nema hamburger/meni — nestaju Pretraga/Moji termini/Za salone/Registruj se
+   ispod ~768px, bez zamjene. GOTOVO — vidi §15.1 za pun detalj
+2. [x] Navbar ne prikazuje ulogovano stanje nakon dev "Brza prijava (test)" quick-login-a (Moji
+   termini/Profil ispravno znaju korisnika, header i dalje pokazuje "Prijavi se"). GOTOVO — vidi
+   §15.2 za pun detalj
+3. [x] `/pretraga` i `/za-salone` nemaju svoj `<title>` (prikazuju generički Home page naslov).
+   GOTOVO — vidi §15.3 za pun detalj
+
+**SVE 3 STAVKE IZ §15 SU SAD GOTOVE** (`npx tsc --noEmit` čist nakon svake). Nema više dogovorenih
+frontend stavki na čekanju — sljedeći korak je ili nova frontend stavka (korisnikov zahtjev) ili
+nastavak backend faze (§0 PAUZIRAN dok se eksplicitno ne zatraži, počinje se od §1).
+
 **Šta ostaje van V1 frontend obima** (nije "ekran" iz liste od 15, nego stvarni backend/funkcionalni
 rad): pravi auth (Sanctum token, sesija, Navbar "ulogovan" state), migracije/modeli, booking engine
 backend, notifikacije email, admin. Sve dokumentovano u §1–§8/§13 ispod, ostaje `[ ]`/`[~]` dok se
@@ -859,6 +873,100 @@ fazi) — ne backend. Redoslijed: 14.1 → 14.2 → 14.3.
       sakrivene) — nazad na Klijenti isto zadržava `role=worker`. Direktna navigacija na URL s
       `?role=worker` odmah učitava ispravan pogled (server-side inicijalizacija radi, ne samo
       client-side toggle). Bez console grešaka
+
+## 15. Frontend polish/bugfix (dogovoreno 2026-09-18, čeka "kreni")
+
+Nalazi iz ručnog QA prolaska kroz cijelu `sredime-frontend` aplikaciju (desktop + mobile 375px),
+urađenog NAKON zadnjeg commit-a ("Add dev-only quick login, lock reviews after submit, fix dashboard
+full-height layout"). Sve niže je frontend-only rad (isti obrazac kao §14) — ne backend. Redoslijed:
+15.1 → 15.2 → 15.3.
+
+### 15.1 Mobilni header nema navigaciju — [x] GOTOVO
+
+- [x] Problem: na širinama ispod ~768px `components/chrome/navbar.tsx` potpuno izbaci linkove
+      "Pretraga"/"Moji termini"/"Za salone"/"Registruj se" — ostaju samo logo i "Prijavi se", bez
+      hamburger/meni zamjene. Potvrđeno na Home, Pretraga, Salon profil (sve javne stranice dijele isti
+      Navbar). Rezultat: na mobilnom se do tih ruta ne može doći iz headera ni na jednoj unutrašnjoj
+      stranici (jedini izlaz je footer na Home page-u).
+- [x] Dodat mobile meni u `components/chrome/navbar.tsx`: `"use client"` + `useState` za otvoreno/
+      zatvoreno stanje, hamburger dugme (`Button variant="ghost" size="icon" md:hidden`, `Menu`/`X`
+      lucide ikona koja se mijenja s stanjem, `aria-expanded` + `aria-label` preko novih `nav.openMenu`/
+      `nav.closeMenu` `messages/bs.json` ključeva). Otvoren meni je `absolute inset-x-0 top-full` panel
+      unutar (sticky) header-a — ne treba eksplicitan `relative` jer `sticky` već uspostavlja containing
+      block za `absolute` potomke. Panel sadrži identičnu listu linkova kao desktop `<nav>` (Pretraga/
+      Moji termini/Za salone) + "Registruj se" (koje je na desktopu zaseban `Button`, ovdje spušten u
+      listu jer je desktop dugme `hidden md:inline-flex`). Zatvaranje: `useEffect` na `usePathname()`
+      (iz `@/i18n/navigation`) zatvara meni čim se ruta stvarno promijeni (klik na link, back/forward),
+      bez potrebe za `onClick` handlerom na svakom pojedinačnom linku
+- [x] Vizuelno i funkcionalno provjereno: mobile (375px) — meni se otvara (svi linkovi vidljivi, dugme
+      postaje "Zatvori meni" s X ikonom), klik na "Pretraga" navigira NA `/pretraga` i meni se sam
+      zatvori; desktop (1280px) — nepromijenjeno, puna `<nav>` traka + oba dugmeta vidljivi, hamburger
+      dugme se ne renderuje. **Napomena:** Browser pane-ov "desktop" preset je ~735px širok — ISPOD
+      `md` (768px) breakpoint-a, pa i dalje prikazuje mobile/hamburger prikaz; stvarna desktop provjera
+      je urađena eksplicitnim 1280px viewport-om. Bez console grešaka. `npx tsc --noEmit` čist
+      (0 grešaka) nakon izmjene.
+
+### 15.2 Navbar ne prati "ulogovan" stanje nakon dev quick-login-a — [x] GOTOVO
+
+- [x] Problem: nakon "Brza prijava (test)" na `/prijava` (Klijent/Radnik/Vlasnik dugmad, dodano zadnjim
+      commit-om), stranice koje ISPRAVNO prikazuju ulogovanog korisnika (npr. "Moji termini", "Klijent
+      profil" — vide `CURRENT_CLIENT_ID` podatke) i dalje imaju Navbar koji prikazuje "Prijavi se"
+      umjesto npr. avatara/imena ili "Odjavi se". Auth-state u Navbar-u nije povezan sa ostatkom
+      aplikacije.
+- [x] Napomena: ranije dokumentovano (§3, §12 "Moji termini"/"Klijent profil" napomene) kao NAMJERNO
+      odgođeno dok pravi Sanctum auth ne dođe — ali dev quick-login uveden zadnjim commit-om je već
+      session-only mehanizam istog tipa kao ostala session-only stanja u frontend-first fazi (favorite,
+      otkazivanje, itd.), pa je popravljeno na taj nivo (BEZ pravog auth-a), ne čekajući backend
+- [x] Novi `lib/session.ts` — `StoredSession { role: "client"|"worker"|"owner"; name }` u
+      `localStorage` (ključ `sredime.session`, ne React Context — Navbar nema zajednički layout, svaka
+      `*-content.tsx` stranica ga sama montira, pa se svaki mount/route-change čita iznova, vidi §15.1
+      `usePathname` efekat). `getStoredSession`/`setStoredSession`/`clearStoredSession` + `initialsFromName`
+      helper (isti `bg-brand-subtle text-brand` avatar-krug stil kao postojeći `initials()` obrasci u
+      `salon-setup-content.tsx`/`statistics-content.tsx`, ali dijeljen jer ga OVDJE koriste 2 fajla)
+- [x] `components/chrome/navbar.tsx` — čita sesiju u istom `useEffect`/`usePathname` bloku koji već
+      zatvara mobile meni (§15.1); kad sesija postoji prikazuje avatar-inicijale + ime (skriveno na
+      najužim ekranima) + "Odjavi se" dugme umjesto Prijavi se/Registruj se dugmadi; mobile dropdown
+      panel isto zamjenjuje "Registruj se" red sa "Odjavi se" akcijom kad je ulogovan
+- [x] `components/auth/login-content.tsx` — `quickLogin(role)` sad zove `setStoredSession({role, name})`
+      prije redirect-a za sva tri dugmeta (`SESSION_NAMES`: client="Sanela Kovačević" — isti identitet
+      kao `CURRENT_CLIENT_ID`, worker="Lejla Hadžić"/owner="Selma Hodžić" — isti identitet kao dashboard
+      viewer chip u `dashboard-content.tsx`, iako Navbar trenutno nema prikaz na `/dashboard` rutama pa
+      worker/owner sesija samo sjedi spremna ako se ikad doda). Obični `handleLogin()` submit i OBA
+      social dugmeta (Google/Apple, preko novog `handleSocialLogin()`) isto postavljaju client sesiju —
+      dizajn nema stvaran role-izbor na generičkoj formi pa je "client" jedina smislena pretpostavka,
+      konzistentno s postojećim "uvijek Moji termini" redirect ponašanjem
+- [x] Odjava (logout) — `clearStoredSession()` + lokalni state reset, radi identično na desktop dugmetu
+      i mobile dropdown redu
+- [x] Nove `messages/bs.json` `nav.logout` ključ ("Odjavi se")
+- [x] Vizuelno i funkcionalno provjereno desktop + mobile: Klijent quick-login → Navbar na "Moji
+      termini" ODMAH pokazuje "SK Sanela" + Odjavi se (bez ijedne dodatne akcije), navigacija na
+      "Klijent profil" (potpuno nova stranica/mount) zadržava sesiju (localStorage), odjava vraća
+      Prijavi se/Registruj se na obje stranice; Vlasnik/Radnik quick-login i dalje ispravno redirektuju
+      na `/dashboard?role=...` bez greške (Navbar se tamo ne renderuje, pa vizuelno ništa ne mijenjaju,
+      samo je potvrđeno da `setStoredSession` poziv ne baca grešku). Mobile dropdown (375px): avatar
+      chip vidljiv pored X ikone, "Odjavi se" red u panelu radi. Bez console grešaka. `npx tsc --noEmit`
+      čist (0 grešaka).
+
+### 15.3 Nedostaju specifični `<title>` na pojedinim rutama — [x] GOTOVO
+
+- [x] Problem: `/pretraga` i `/za-salone` prikazivali su generički naslov taba ("SrediMe — sredi se
+      bez poziva", isti kao Home page, iz root `app/[locale]/layout.tsx` `metadata` fallback-a) umjesto
+      stranici-specifičnog naslova — oba `page.tsx` fajla nisu imala ni `export const metadata` ni
+      `generateMetadata()`. Ostale rute (Salon profil preko `generateMetadata()`, i svih 9 ostalih
+      statičnih ruta preko `export const metadata`) su VEĆ imale ispravan naslov
+- [x] Dodano `export const metadata: Metadata = { title: "Pretraga salona | SrediMe" }` u
+      `app/[locale]/(public)/pretraga/page.tsx` i `title: "Za salone | SrediMe"` u
+      `app/[locale]/(public)/za-salone/page.tsx` — isti minimalni obrazac (samo `title`, bez
+      `description`) kao svih 9 postojećih statičnih `export const metadata` primjera (Prijava/
+      Registracija/Moji termini/Recenzija/Klijent profil/Salon dashboard/Postavljanje salona/
+      Statistika/Pozivnica radniku); Salon profil je jedina ruta sa bogatijim `generateMetadata()`
+      (naslov+opis) jer je JEDINA čiji sadržaj (i time SEO opis) zavisi od dinamičkog parametra (slug)
+- [x] Provjereno kroz SVE `page.tsx` fajlove (`grep` za `generateMetadata|export const metadata`) —
+      jedina preostala ruta bez ijednog je Home page (`app/[locale]/(public)/page.tsx`), što je
+      NAMJERNO (koristi root layout fallback naslov "SrediMe — sredi se bez poziva", ne praznina)
+- [x] Vizuelno i funkcionalno provjereno (`document.title` u browseru): `/bs/pretraga` →
+      "Pretraga salona | SrediMe", `/bs/za-salone` → "Za salone | SrediMe", `/bs` i dalje pokazuje
+      fallback naslov (nepromijenjeno). Bez console grešaka. `npx tsc --noEmit` čist (0 grešaka).
 
 ## Napomena o obimu / redoslijedu
 

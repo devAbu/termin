@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { SearchContent } from "@/components/discovery/search-content";
 import { searchSalons } from "@/lib/api/salons";
+
+export const metadata: Metadata = {
+  title: "Pretraga salona | SrediMe",
+};
 
 export default async function SearchPage({
   searchParams,
