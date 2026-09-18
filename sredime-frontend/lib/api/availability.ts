@@ -1,3 +1,5 @@
+import { toDateKey } from "@/lib/date";
+import { formatMinutesOfDay } from "@/lib/format";
 import type { Salon, Service } from "@/types/entities";
 
 export interface TimeSlot {
@@ -5,10 +7,14 @@ export interface TimeSlot {
   taken: boolean;
 }
 
-const SLOT_INTERVAL_MINUTES = 30;
+/** Slot grid step, shared by the client wizard and the owner-side pickers. */
+export const SLOT_INTERVAL_MINUTES = 30;
 
-function parseTimeRange(range: string): { open: number; close: number } | null {
-  if (range === "Zatvoreno") return null;
+/** How many days ahead (starting today) the booking wizard lets a client pick from. */
+export const BOOKING_WINDOW_DAYS = 14;
+
+function parseTimeRange(range: string | null): { open: number; close: number } | null {
+  if (range === null) return null;
   const [open, close] = range.split(" – ").map((part) => {
     const [h, m] = part.split(":").map(Number);
     return h * 60 + m;
@@ -21,13 +27,6 @@ export function hoursForDate(salon: Salon, date: Date): { open: number; close: n
   const dayLabel = day === 0 ? "Nedjelja" : day === 6 ? "Subota" : "Pon – Pet";
   const entry = salon.openingHours.find((h) => h.day === dayLabel);
   return entry ? parseTimeRange(entry.time) : null;
-}
-
-function dateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -63,15 +62,15 @@ export function computeSlots({
   const hours = hoursForDate(salon, date);
   if (!hours) return [];
 
-  const key = dateKey(date);
-  const isToday = key === dateKey(now);
+  const key = toDateKey(date);
+  const isToday = key === toDateKey(now);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const lastStart = hours.close - service.durationMinutes - service.bufferMinutes;
 
   const slots: TimeSlot[] = [];
   for (let t = hours.open; t <= lastStart; t += SLOT_INTERVAL_MINUTES) {
     if (isToday && t <= nowMinutes) continue;
-    const time = `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+    const time = formatMinutesOfDay(t);
     const taken = workerIds.every((id) => isTakenSeed(key, id, time));
     slots.push({ time, taken });
   }
@@ -80,6 +79,27 @@ export function computeSlots({
 
 export function countFreeSlots(args: Parameters<typeof computeSlots>[0]): number {
   return computeSlots(args).filter((s) => !s.taken).length;
+}
+
+export type DayPart = "morning" | "afternoon" | "evening";
+
+// Minutes since midnight, [from, to).
+const DAY_PARTS: { part: DayPart; from: number; to: number }[] = [
+  { part: "morning", from: 0, to: 720 },
+  { part: "afternoon", from: 720, to: 1020 },
+  { part: "evening", from: 1020, to: 1440 },
+];
+
+/** Buckets slots into morning/afternoon/evening, dropping empty buckets. */
+export function groupSlotsByDayPart(slots: TimeSlot[]): { part: DayPart; items: TimeSlot[] }[] {
+  return DAY_PARTS.map(({ part, from, to }) => ({
+    part,
+    items: slots.filter((s) => {
+      const [h, m] = s.time.split(":").map(Number);
+      const minutes = h * 60 + m;
+      return minutes >= from && minutes < to;
+    }),
+  })).filter((g) => g.items.length > 0);
 }
 
 export async function getAvailableSlots(args: Parameters<typeof computeSlots>[0]): Promise<TimeSlot[]> {

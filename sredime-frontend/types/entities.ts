@@ -51,8 +51,8 @@ export interface Salon {
   nextSlotLabel: string;
   nextSlotIsToday: boolean;
   photoCaption: string;
-  /** Salon-level working hours — no dedicated table in docs/database.md yet, display-only for now. */
-  openingHours: { day: string; time: string }[];
+  /** Salon-level working hours — no dedicated table in docs/database.md yet, display-only for now. `time` is "09:00 – 20:00", or `null` when the salon is closed that day. */
+  openingHours: { day: string; time: string | null }[];
   /** Aggregate 1..5-star counts (index 0 = 1-star ... index 4 = 5-star), computed server-side. */
   ratingBreakdown: number[];
 }

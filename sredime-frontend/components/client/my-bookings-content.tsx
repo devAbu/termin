@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Calendar,
   CalendarX,
@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useFlashToast } from "@/hooks/use-flash-toast";
 import { Link } from "@/i18n/navigation";
 import { Navbar } from "@/components/chrome/navbar";
 import { Footer } from "@/components/chrome/footer";
@@ -62,8 +63,7 @@ export function MyBookingsContent({
   const [cancelTargetId, setCancelTargetId] = useState<number | null>(null);
   const [salonFilter, setSalonFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "">("");
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { toast, flash } = useFlashToast();
 
   const liveUpcoming = upcoming.filter((b) => !cancelledIds.includes(b.id));
   const cancelTarget = upcoming.find((b) => b.id === cancelTargetId) ?? null;
@@ -73,12 +73,6 @@ export function MyBookingsContent({
   const filteredHistory = history.filter(
     (h) => (!salonFilter || h.salon.name === salonFilter) && (!statusFilter || h.status === statusFilter),
   );
-
-  function flash(message: string) {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
-  }
 
   function confirmCancel() {
     if (!cancelTarget) return;

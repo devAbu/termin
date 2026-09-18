@@ -323,8 +323,8 @@ export function SalonProfileContent({
                 {salon.openingHours.map((h, i) => (
                   <div key={h.day} className="flex justify-between gap-3 text-sm">
                     <span className={i === 0 ? "font-semibold text-text-primary" : "text-text-secondary"}>{h.day}</span>
-                    <span className={h.time === "Zatvoreno" ? "text-text-muted" : "font-medium text-text-primary"}>
-                      {h.time}
+                    <span className={h.time === null ? "text-text-muted" : "font-medium text-text-primary"}>
+                      {h.time ?? t("hoursClosed")}
                     </span>
                   </div>
                 ))}
@@ -353,8 +353,8 @@ export function SalonProfileContent({
           {salon.openingHours.map((h, i) => (
             <div key={h.day} className="flex justify-between gap-3 text-sm">
               <span className={i === 0 ? "font-semibold text-text-primary" : "text-text-secondary"}>{h.day}</span>
-              <span className={h.time === "Zatvoreno" ? "text-text-muted" : "font-medium text-text-primary"}>
-                {h.time}
+              <span className={h.time === null ? "text-text-muted" : "font-medium text-text-primary"}>
+                {h.time ?? t("hoursClosed")}
               </span>
             </div>
           ))}

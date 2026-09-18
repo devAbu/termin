@@ -57,8 +57,7 @@ export default async function SalonProfilePage({
         ? { "@type": "AggregateRating", ratingValue: salon.rating, reviewCount: salon.reviewCount }
         : undefined,
     openingHoursSpecification: salon.openingHours
-      .filter((h) => h.time !== "Zatvoreno")
-      .map((h) => ({ "@type": "OpeningHoursSpecification", dayOfWeek: h.day, description: h.time })),
+      .flatMap((h) => (h.time === null ? [] : [{ "@type": "OpeningHoursSpecification", dayOfWeek: h.day, description: h.time }])),
     makesOffer: services.map((s) => ({
       "@type": "Offer",
       name: s.name,

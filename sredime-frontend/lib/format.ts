@@ -134,3 +134,14 @@ export function initialsFromName(name: string): string {
 export function firstName(name: string): string {
   return name.split(" ")[0];
 }
+
+/** Local wall-clock end time of a booking starting at `iso` and lasting `durationMinutes`, "09:45". */
+export function formatEndTimeOfDay(iso: string, durationMinutes: number): string {
+  const end = new Date(new Date(iso).getTime() + durationMinutes * 60_000);
+  return formatMinutesOfDay(end.getHours() * 60 + end.getMinutes());
+}
+
+/** Minutes since midnight → "09:30". */
+export function formatMinutesOfDay(minutes: number): string {
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}

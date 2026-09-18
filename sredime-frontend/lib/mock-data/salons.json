@@ -22,7 +22,7 @@
     "openingHours": [
       { "day": "Pon – Pet", "time": "09:00 – 20:00" },
       { "day": "Subota", "time": "09:00 – 16:00" },
-      { "day": "Nedjelja", "time": "Zatvoreno" }
+      { "day": "Nedjelja", "time": null }
     ]
   },
   {
@@ -48,7 +48,7 @@
     "openingHours": [
       { "day": "Pon – Pet", "time": "08:00 – 20:00" },
       { "day": "Subota", "time": "09:00 – 15:00" },
-      { "day": "Nedjelja", "time": "Zatvoreno" }
+      { "day": "Nedjelja", "time": null }
     ]
   },
   {
@@ -74,7 +74,7 @@
     "openingHours": [
       { "day": "Pon – Pet", "time": "10:00 – 19:00" },
       { "day": "Subota", "time": "10:00 – 16:00" },
-      { "day": "Nedjelja", "time": "Zatvoreno" }
+      { "day": "Nedjelja", "time": null }
     ]
   },
   {
@@ -100,7 +100,7 @@
     "openingHours": [
       { "day": "Pon – Pet", "time": "09:00 – 18:00" },
       { "day": "Subota", "time": "09:00 – 14:00" },
-      { "day": "Nedjelja", "time": "Zatvoreno" }
+      { "day": "Nedjelja", "time": null }
     ]
   },
   {
@@ -126,7 +126,7 @@
     "openingHours": [
       { "day": "Pon – Pet", "time": "08:30 – 19:00" },
       { "day": "Subota", "time": "09:00 – 15:00" },
-      { "day": "Nedjelja", "time": "Zatvoreno" }
+      { "day": "Nedjelja", "time": null }
     ]
   },
   {
@@ -152,7 +152,7 @@
     "openingHours": [
       { "day": "Pon – Pet", "time": "09:00 – 19:00" },
       { "day": "Subota", "time": "09:00 – 15:00" },
-      { "day": "Nedjelja", "time": "Zatvoreno" }
+      { "day": "Nedjelja", "time": null }
     ]
   },
   {
@@ -178,7 +178,7 @@
     "openingHours": [
       { "day": "Pon – Pet", "time": "09:00 – 20:00" },
       { "day": "Subota", "time": "09:00 – 16:00" },
-      { "day": "Nedjelja", "time": "Zatvoreno" }
+      { "day": "Nedjelja", "time": null }
     ]
   },
   {

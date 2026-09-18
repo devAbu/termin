@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Check, Lock, Mail, Phone, Search, User as UserIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useFlashToast } from "@/hooks/use-flash-toast";
 import { Link } from "@/i18n/navigation";
 import { Navbar } from "@/components/chrome/navbar";
 import { Footer } from "@/components/chrome/footer";
@@ -28,14 +29,7 @@ export function ClientProfileContent({ user }: { user: User }) {
   const [notifReminder, setNotifReminder] = useState(true);
   const [notifChanges, setNotifChanges] = useState(true);
 
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function flash(message: string) {
-    setToast(message);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
-  }
+  const { toast, flash } = useFlashToast();
 
   function saveProfile() {
     const error = validateProfile({ name, email, phone });

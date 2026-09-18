@@ -72,9 +72,10 @@ bugovi, dupliciran kod, i da li je arhitektura odvojena/spremna za budući mobil
   (state adjustment tokom rendera preko `prevActionModal` poređenja) prije nego je ušlo u kod. `npx tsc
   --noEmit` i `npx eslint .` čisti (identične 6 pre-existing grešaka kao prije Faze 1, nijedna nova),
   sve 4 stavke ponovo live-testirane u browseru.
-- **§16.2 Faza 2** (posebna runda, POSLIJE Faze 1, veći/rizičniji zahvat, ČEKA "kreni"): rastavljanje
-  4 "god-komponente" (600-870 linija) i izvlačenje poslovne logike/validacije u `lib/` — prava
-  popravka za mobile-ready separaciju
+- **§16.2 Faza 2 — GOTOVO (svih 5 stavki, 2026-09-18)**: rastavljene 4 "god-komponente" (600-870 linija
+  → 260-570) i poslovna logika/validacija izvučena u `lib/` (`validation.ts`, `date.ts`,
+  `api/{booking-metrics,client-history,dashboard,team}.ts`, `constants/salon-setup.ts`) — mobile-ready
+  separacija. Pun detalj po stavci u §16.2. Nije commitovano (stavke 4 i 5 su u radnom stablu).
 
 Nakon §16.2: nastavak backend faze (§0 PAUZIRAN dok se eksplicitno ne zatraži, počinje se od §1) ili
 nova frontend stavka.
@@ -1149,22 +1150,122 @@ tačno mijenja. Pravila:
    registraciju, po korisnikovom zahtjevu; vidi detalj u bullet-u "Forma-validacija" ispod)
 2. [x] `salon-setup-content.tsx` — konstante u `lib/constants/` — GOTOVO (vidi bullet ispod)
 3. [x] `client-history-content.tsx` — agregacije u `lib/` — GOTOVO (vidi bullet ispod)
-4. `booking-wizard.tsx` — pod-komponenta po koraku + date helperi u `lib/`
-5. `dashboard-content.tsx` — najveća, 7 tabova, radi se zadnja kad je obrazac već uhodan
+4. [x] `booking-wizard.tsx` — pod-komponenta po koraku + date helperi u `lib/` — GOTOVO (vidi bullet ispod)
+5. [x] `dashboard-content.tsx` — najveća, 7 tabova — GOTOVO (vidi bullet ispod). **FAZA 2 JE ZAVRŠENA
+   (svih 5 stavki).**
 
-(Redoslijed lista ispod je originalni iz audita, ne redoslijed izvršenja. Trenutne veličine nakon
-Faze 1: dashboard 868, booking-wizard 708, client-history 603, salon-setup 593 linija.)
+(Redoslijed lista ispod je originalni iz audita, ne redoslijed izvršenja. Veličine nakon Faze 1 bile su:
+dashboard 868, booking-wizard 708, client-history 603, salon-setup 593 linija; sad: dashboard 259,
+booking-wizard 269, client-history 563, salon-setup 572.)
 
-- [ ] `components/owner/dashboard-content.tsx` (868 linija) — jedna `DashboardContent` komponenta
-      renderuje svih 7 tabova (kalendar/zahtjevi/klijenti/usluge/radnici/vrijeme/statistika) kroz
-      `page === "..."` grane u istoj funkciji ("god component"). Lokalni helperi (`contactFor`,
-      `startOfDay`, `timeOf`, `endTimeOf`; `initialsOf` već uklonjen u Fazi 1) i inline agregacije (no-show brojevi,
-      booked-minutes, prihod, per-radnik tally na linijama 203-216, 728-749) trebaju u `lib/`. Plan:
-      rastaviti po tabu u pod-komponente, izvući date helpere i agregacije u `lib/api/bookings.ts`
-      ili novi `lib/dashboard-stats.ts`.
-- [ ] `components/booking/booking-wizard.tsx` (707 linija) — jedna komponenta za cijeli booking flow
-      (usluga→radnik→termin→potvrda); lokalni `startOfDay`/`isSameDay`/`freeWord` helperi umjesto u
-      `lib/`. Plan: pod-komponenta po koraku, date helperi u `lib/format.ts`/`lib/api/availability.ts`.
+- [x] `components/owner/dashboard-content.tsx` (868 → 259 linija) — GOTOVO (2026-09-18). Ostao je samo
+      "školjka": SVE session-only stanje (izmjene termina/usluga, dodani termini, tim, otvoreni modali,
+      toast, `dayOffset`/`staffFilter`/`hoursClosed`/`canBlockOverrides`) i dalje živi ovdje — NAMJERNO ne
+      u tabovima, da preživi prebacivanje tabova kao i prije (tab komponente se unmount-uju). Sve ostalo
+      izvučeno u novi `components/owner/dashboard/`: `dashboard-nav.tsx` (`DashboardSidebar` +
+      `DashboardHeader`, oba nav-a), po jedna komponenta po tabu (`calendar-tab`, `requests-tab`,
+      `clients-tab`, `services-tab`, `staff-tab`, `hours-tab`, `stats-tab`), `appointment-card.tsx`
+      (`AppointmentList` + kartica, ex `renderAppointmentCard`/`actionsFor`, radi sa `AppointmentActions`
+      callback-ima), `booking-action-modal.tsx` (Pomjeri/Otkaži/Nije se pojavio), `team-badge.ts` (ikone, uz
+      komponente jer lib/ mora biti React-free).
+      **Novo u `lib/`:** `lib/api/dashboard.ts` — `mergeBookings`, `mergeServices`, `dayFullnessPercent`,
+      `summarizeBookings`, `workerConfirmationTally`, `findMoveSlots` (+ `MoveSlot`), `buildManualBooking`;
+      `lib/api/team.ts` — `OWNER_MEMBER`, `buildInitialTeam` (ex `contactFor`); `types/dashboard.ts` dobio
+      `TeamStatus`/`TeamMember` (bili lokalni u komponenti); `lib/date.ts` — `toDateKey`, `toLocalIso`
+      (ex dva ručna sklapanja "YYYY-MM-DDTHH:MM:00" stringa); `lib/format.ts` — `formatEndTimeOfDay`,
+      `formatMinutesOfDay`. Sve ostale lokalne kopije su nestale: `timeOf` → `formatTimeOfDay`,
+      `startOfDay`/`addDays` → `lib/date.ts`, `STATUS_ICON` → `BOOKING_STATUS_ICON`, cijena u redu →
+      `bookingAmount`, nedolasci → `countNoShows` (30-dnevni prozor i ukupno), prihod → `completedRevenue`.
+      `moveChoice` reset više NE koristi "adjust state during render" obrazac: `BookingActionModal` je
+      montiran samo dok je otvoren, pa svaki put kreće od prvog slota (isti efekat, jednostavniji kod).
+      `fullnessPct` više nije `useMemo` sa filterom otkazanih — `busyMinutes` (statistics.ts) već računa
+      isključivo ne-otkazane statuse, isti skup.
+      **Provjera:** `tsc` čist; `eslint` 4 problema (isti stari, nijedan nov, nijedan u dashboardu);
+      (1) 18.904 poređenja stara-vs-nova čista logika na nasumičnim podacima (stara logika prepisana iz
+      `HEAD` verzije: merge, prihod/nedolasci/ukupno, per-radnik tally, popunjenost dana, 30-dnevni
+      prozor, `findMoveSlots` za 4 različita "danas" uključujući prelaske na ljetno/zimsko vrijeme,
+      `buildManualBooking`, `contactFor`, `endTimeOf`/`timeOf` na 5000 nasumičnih termina) — 0 razlika;
+      test je mutacijski provjeren (buffer 10→40 min daje 10 razlika, prihod +1 daje 60 razlika), pa zaista
+      može pasti; (2) UŽIVO poređenje stare (`git stash` na `HEAD`) i nove verzije istim skriptama: 37
+      snimaka cijelog ekrana (svih 7 tabova u obje uloge, navigacija dana ±10, filter po radniku, toast
+      "Već gledaš današnji dan", prebacivanje uloge i redirect sa Statistike, očuvanje hoursClosed/canBlock
+      između tabova) + 24 snimka tokova akcija (Pomjeri sa izborom slota i potvrdom, ponovno otvaranje =
+      prvi slot označen, Odustani, Otkaži, Nije se pojavio, Obavljeno, Potvrdi, Zahtjevi→Potvrdi, modal
+      Uredi uslugu, modal Pozovi radnika) — svih 61 hash teksta stranice IDENTIČNO; (3) uživo samo na novoj
+      verziji: "Novi termin" do kraja (termin 09:00–09:45, "Ručno dodano", popunjenost 11%, toast) i mobilni
+      prikaz (375px, horizontalni tab-nav, bez horizontalnog skrola). Bez konzolnih grešaka.
+      **Uočeno usput, 4 sitnice — SVE RIJEŠENE istog dana (korisnik tražio prije commit-a):**
+      - [x] **Prijevodi.** `"Već gledaš današnji dan."`, `"{n} prethodnih nedolazaka"` i `"Vlasnica salona"` sad
+        idu kroz `messages/bs.json` (`dashboard.alreadyToday`/`previousNoShows`/`ownerRole`); `TeamMember.role`
+        je `string | null` (owner = `null`, `StaffTab` piše `t("ownerRole")`). "Zatvoreno": `Salon.openingHours[].time`
+        je sad `string | null` (`null` = zatvoreno, kao što bi vratio pravi API) umjesto magičnog stringa
+        `"Zatvoreno"` iz mocka — 7 unosa u `salons.json`, poređenja u `availability.ts`, `hours-tab.tsx`, profilu
+        salona (2×) i JSON-LD-u; prikaz "Zatvoreno" ide kroz prijevod (`salon.hoursClosed`, `dashboard.hoursClosed`).
+        NAPOMENA: ključ `day` ("Pon – Pet"/"Subota"/"Nedjelja") je i dalje bosanski string koji `hoursForDate`
+        koristi kao ključ pretrage — pravi model (dani u sedmici kao broj/enum) treba kad se radi `salon_hours`.
+      - [x] **Dupla logika.** `NewAppointmentModal` sad koristi `computeOwnerSlots` iz `lib/api/dashboard.ts`,
+        koji dijeli `busyRangesForWorkerOnDay` + `overlapsBusy` sa `findMoveSlots`; `SLOT_INTERVAL_MINUTES`
+        je jedan (export iz `availability.ts`); `hhmm()` u modalu i inline formatiranje vremena u `computeSlots`
+        → `formatMinutesOfDay`; `dateKey()` u `availability.ts` → `toDateKey` (`lib/date.ts`).
+      - [x] **Toast.** Novi `hooks/use-flash-toast.ts` (`const { toast, flash } = useFlashToast()`) zamijenio je
+        svih 7 lokalnih kopija (login, registracija, profil, moji termini, klijent historija, dashboard,
+        salon-setup). Jedan timer sa `clearTimeout` + čišćenje pri unmount-u. Jedina razlika u ponašanju: ista
+        poruka pozvana dvaput zaredom restartuje 2,6 s od drugog poziva (ranije je prva kopija timera skratila
+        drugu) — provjereno uživo.
+      - [x] **Magični `+10`.** Zauzeće iza termina sad je `trajanje + bufferMinutes` te usluge (konstanta
+        `BUSY_BUFFER_MINUTES` uklonjena) — važi i za "Pomjeri" i za "Novi termin". **Na trenutnim mock podacima
+        NEMA vidljive razlike**: sva vremena/trajanja su višekratnici od 15 min, buffer je 5/10/15, mreža
+        slotova 30 min, pa `t < kraj` daje isti ishod za sva tri buffera (0 razlika u 6.000 scenarija).
+        Ispravnost je provjerena direktno: buffer 10 blokira do 09:40 (slotovi 09:00, 09:30), buffer 45 do 10:15
+        (uz to i 10:00). Razlika će se pokazati tek sa realnim podacima (npr. buffer 20/30, termini van mreže).
+      **Provjera ovih 4:** `tsc` čist; `eslint` isti 4 stara; dva testa stara-vs-nova logika — 18.904 provjere
+      (`findMoveSlots` i ostalo, 0 razlika, i sa `bufferMinutes`) + 12.000 provjera (stari modal + `computeSlots`
+      iz `HEAD` vs novi kod, 0 razlika, 1.344 scenarija sa zauzetim slotovima; mutacijski provjereno: buffer 40
+      daje 1.209 razlika); uživo: dashboard 37+24 snimka i dalje IDENTIČNO `HEAD` verziji, "Vlasnica salona",
+      "3 prethodnih nedolazaka", toast sa restartom tajmera, profil salona (desktop+mobilni blok "Zatvoreno"
+      prigušeno, JSON-LD bez nedjelje), traka dana u wizardu, "Novi termin", i toast na svih 6 ostalih ekrana.
+      **Još uočeno (nije mijenjano):** otkazani termini i dalje BLOKIRAJU slot u `findMoveSlots`/`computeOwnerSlots`
+      (`busyRangesForWorkerOnDay` ne filtrira status) — vjerovatno bug, jedno je pitanje da li je namjerno;
+      "1 prethodnih nedolazaka" je gramatički pogrešno za 1 (pluralBs bi riješio, ali mijenja tekst).
+- [x] `components/booking/booking-wizard.tsx` (708 → 269 linija) — GOTOVO (2026-09-18). Wizard je sad samo
+      orkestrator (state, navigacija, `recap`, `canNext`); koraci su odvojene komponente u
+      `components/booking/`: `service-step.tsx`, `worker-step.tsx`, `time-step.tsx`, `review-step.tsx`,
+      `done-panel.tsx`, `wizard-stepper.tsx` (desktop stepper + mobilni progress), `booking-summary.tsx`
+      (`BookingSummary` sidebar + `MobileBookingBar`), `wizard-types.ts` (`Step`, `RecapRow`).
+      **`lib/date.ts`**: `isSameDay`, `buildDayWindow(count, from?)` (ex lokalni `startOfDay`/`isSameDay`/petlja
+      za 14 dana). **`lib/api/availability.ts`**: `BOOKING_WINDOW_DAYS` (14, ex `DAY_WINDOW`) i
+      `groupSlotsByDayPart(slots)` → `{part: "morning"|"afternoon"|"evening", items}` (ex inline grupisanje sa
+      minutama 0/720/1020/1440). **`lib/api/favorites.ts`**: `pickPreselectedWorkerId(favorites, bookings,
+      serviceId, eligibleWorkerIds)` (ex inline "omiljeni pa zadnji korišteni" u `pickService`).
+      `freeWord` uklonjen — bio je tačna kopija već postojećeg `pluralBs` iz `lib/format.ts`, sad se koristi on.
+      Stanje koje pripada samo koraku "Termin" (`days`, `slots`, `firstFreeDay`, `groups`) preseljeno u
+      `TimeStep`; unos gosta (ime/telefon/email/napomena/podsjetnik) je jedan `details` objekat umjesto 5
+      odvojenih `useState`-ova. `RecapRow` dobio `key` ("service"|"staff"|"time"|"duration") — "Izmijeni" i
+      "vrijeme nije odabrano" stil se više ne odlučuju poređenjem prevedenih labela (`r.label === t("recapService")`).
+      **Provjera:** `tsc` čist; `eslint` 6 → 4 problema (NIJE nova greška: 2 pre-existing
+      `react-hooks` greške na starim linijama 156/167 wizarda su nestale jer su memoi sad u `TimeStep`;
+      preostale 4 su isti stari u navbar/search-content/home-content/review-form); uživo (desktop): korak
+      usluga (cijene + popust), radnik sa predselekcijom "zadnji termin: Amina", termin (traka dana sa
+      "10 slobodnih"/"zatvoreno", "Prvi slobodan dan" skok, grupe Jutro/Popodne, precrtani zauzeti slotovi),
+      potvrda sa validacijom (3 hinta, dugme onemogućeno), "Izmijeni" po redu (usluga→1, radnik→2,
+      trajanje→3 kao prije), skok preko steppera uz očuvan unos, "Potvrdi termin" → "Termin je zatražen",
+      "Sačuvaj omiljeno" → nova sesija pokazuje karticu "Omiljeni radnik" + "Promijeni radnika", deep linkovi
+      `?usluga=1&radnik=1` (→ termin) i `?usluga=1` (→ radnik + prijedlog); mobilni (375px): progress traka,
+      pregled, donja traka sa cijenom. Bez konzolnih/server grešaka.
+      **NIJE uživo provjereno:** `solo` grana (salon sa 1 radnikom, 3 koraka) — mock podaci nemaju nijedan
+      takav salon (svih 8 ima 2–3 radnika); kod za tu granu (`solo ? … : …`) je netaknut.
+      **Uočeno usput, 3 sitnice — 2 riješene istog dana, 1 namjerno ostavljena:**
+      - [x] Nazivi dijela dana bili hardkodirani bosanski (kršenje pravila #6 iz `docs/CLAUDE.md`) — sad
+        ključevi `dayPartMorning`/`dayPartAfternoon`/`dayPartEvening` u `messages/bs.json` (`booking`
+        sekcija), `DAY_PART_LABEL_KEYS` u `time-step.tsx`.
+      - [x] `TimeStep` je zvao `computeSlots` 2× po danu iz trake dana — sad 1× (`countFreeSlots` se i dalje
+        koristi samo za `firstFreeDay`); `isClosed` je `daySlots.length === 0` (stari dodatni uslov
+        `&& count === 0` je bio suvišan: prazna lista ⇒ 0 slobodnih). Provjera: `tsc` čist, `eslint` i dalje
+        4 (isti stari); uživo traka dana za Studio Lux (14 dana) identična ranijem snimku (18. i 20. i 27.
+        "zatvoreno", 19. "10 slobodnih", 21.–25. 17/18/17/18/17...), grupe Jutro/Popodne/Veče sve tri
+        prikazane (radni dan), bez "dayPart" ključa koji curi u UI, bez konzolnih grešaka.
+      - [ ] Stanje gosta (ime/telefon/email/napomena/podsjetnik) se NE resetuje u "Zakaži još jedan termin"
+        — korisnik je odlučio da nije bitno, ostavljeno kako jeste.
 - [x] `components/owner/client-history-content.tsx` (603 → 565 linija) — GOTOVO (2026-09-18).
       **Novi `lib/api/booking-metrics.ts`** (list-modul bez zavisnosti od `bookings.ts` runtime-a, da
       `bookings.ts` i `statistics.ts` oba mogu da ga koriste bez kružne/obrnute zavisnosti): 3 primitive koje
@@ -1199,12 +1300,12 @@ Faze 1: dashboard 868, booking-wizard 708, client-history 603, salon-setup 593 l
       (Sedmica/Mjesec/Danas/Raspon; sedmica identična ranijim brojevima 207 KM/+158,8%/6 termina),
       Moji termini (cijene 35/35/56 KM i historija 56/25/30/15/35 KM identične ranijim), dashboard
       "Klijenti" (Emina "Rizik nedolaska", Sanela "Redovan klijent"), modal novog termina (Danas/19.9./20.9.).
-      **Preostale kopije ISTIH formula — SVE su u fajlovima koje dobijaju sljedeće stavke:**
+      **Preostale kopije ISTIH formula — SVE su u fajlovima koje dobijaju sljedeće stavke (RIJEŠENO u stavkama 4 i 5):**
       `dashboard-content.tsx` (stavka 5): `timeOf` (→ `formatTimeOfDay`), `startOfDay` (→ `lib/date.ts`),
       `STATUS_ICON` (→ `BOOKING_STATUS_ICON`), prihod-reduce r.736 (→ `completedRevenue`), nedolasci sa
       prozorom od 30 dana r.198 (→ `countNoShows(.., {now, days: 30})`), ukupni nedolasci r.730
       (→ `countNoShows`), cijena u redu r.273 (→ `bookingAmount`); `booking-wizard.tsx` (stavka 4):
-      lokalni `startOfDay` (→ `lib/date.ts`).
+      lokalni `startOfDay` (→ `lib/date.ts`) — RIJEŠENO u stavci 4.
 - [x] `components/owner/salon-setup-content.tsx` (607 → 572 linija) — GOTOVO (2026-09-18). Domain podaci
       izvučeni iz komponente: novi `lib/constants/salon-setup.ts` (`SERVICE_DURATION_OPTIONS_MINUTES`,
       `WORKING_TIME_OPTIONS`, `WEEKDAY_LABELS_MON_FIRST`, `PHOTO_PLACEHOLDER_CAPTIONS`; imena su
@@ -1274,9 +1375,9 @@ Faze 1: dashboard 868, booking-wizard 708, client-history 603, salon-setup 593 l
       mobitela, min dužina lozinke i raspon popusta.
       Napomena: `next dev` (Turbopack) se jednom srušio internim panic-om usred testa — restart je
       riješio, nije vezano za kod.
-- [ ] Nakon svake pod-stavke: `npx tsc --noEmit` čist, pun vizuelni regresioni prolaz kroz dirnuti
+- [x] Nakon svake pod-stavke: `npx tsc --noEmit` čist, pun vizuelni regresioni prolaz kroz dirnuti
       ekran (desktop+mobile), potvrda da se ponašanje NIJE promijenilo (ovo je čist refaktor, ne
-      feature rad).
+      feature rad). — urađeno za svih 5 pod-stavki.
 
 ## Napomena o obimu / redoslijedu
 

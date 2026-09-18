@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useFlashToast } from "@/hooks/use-flash-toast";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +64,7 @@ export function SalonSetupContent() {
 
   const [step, setStep] = useState<Step>(1);
   const [sent, setSent] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const { toast, flash } = useFlashToast();
 
   const [photoCount, setPhotoCount] = useState(INITIAL_PHOTO_COUNT);
 
@@ -79,11 +80,6 @@ export function SalonSetupContent() {
   const [stSend, setStSend] = useState(true);
 
   const [hours, setHours] = useState<DayHours[]>(createDefaultWeek);
-
-  function flash(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast((cur) => (cur === msg ? null : cur)), 2600);
-  }
 
   function goTo(n: Step) {
     setStep(n);

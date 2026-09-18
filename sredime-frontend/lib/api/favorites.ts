@@ -28,3 +28,20 @@ export function pickLastUsedWorkerId(bookings: BookingDetails[], serviceId: numb
     .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
   return matches[0]?.worker.id ?? null;
 }
+
+/**
+ * Worker to pre-select once a service is picked: the favorite for that service, else the last-used
+ * one — but only if that worker is still eligible (assigned to the service). `null` = nothing preselected.
+ */
+export function pickPreselectedWorkerId(
+  favorites: FavoriteServiceWorker[],
+  bookings: BookingDetails[],
+  serviceId: number,
+  eligibleWorkerIds: number[],
+): number | null {
+  const favorite = pickFavoriteWorkerId(favorites, serviceId);
+  if (favorite != null && eligibleWorkerIds.includes(favorite)) return favorite;
+  const lastUsed = pickLastUsedWorkerId(bookings, serviceId);
+  if (lastUsed != null && eligibleWorkerIds.includes(lastUsed)) return lastUsed;
+  return null;
+}

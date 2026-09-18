@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { useFlashToast } from "@/hooks/use-flash-toast";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge, type badgeVariants } from "@/components/ui/badge";
@@ -95,13 +96,8 @@ export function ClientHistoryContent({
   const [reason, setReason] = useState("");
   const [extra, setExtra] = useState<BookingDetails[]>([]);
   const [newApptOpen, setNewApptOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const { toast, flash } = useFlashToast();
   const [now] = useState(() => new Date());
-
-  function flash(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast((cur) => (cur === msg ? null : cur)), 2600);
-  }
 
   function selectRole(r: Role) {
     setRole(r);

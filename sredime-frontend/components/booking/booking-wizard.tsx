@@ -1,47 +1,27 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Calendar,
-  CalendarCheck,
-  Check,
-  Clock,
-  Heart,
-  Info,
-  Scissors,
-  User,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, CalendarCheck, Clock, Scissors, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Navbar } from "@/components/chrome/navbar";
 import { Footer } from "@/components/chrome/footer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
-import { cn } from "@/lib/utils";
-import { firstName, formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice, initialsFromName } from "@/lib/format";
-import { hasText, isGuestBookingDetailsValid, isValidEmail, isValidGuestName, isValidPhone } from "@/lib/validation";
-import { computeSlots, countFreeSlots } from "@/lib/api/availability";
+import { formatDayLabel, getEffectivePrice } from "@/lib/format";
+import { startOfDay } from "@/lib/date";
+import { isGuestBookingDetailsValid } from "@/lib/validation";
 import { CURRENT_CLIENT_ID, type BookingDetails } from "@/lib/api/bookings";
-import { pickFavoriteWorkerId, pickLastUsedWorkerId } from "@/lib/api/favorites";
+import { pickFavoriteWorkerId, pickLastUsedWorkerId, pickPreselectedWorkerId } from "@/lib/api/favorites";
 import type { FavoriteServiceWorker, Salon, Service, Worker } from "@/types/entities";
-
-type Step = 0 | 1 | 2 | 3;
-const DAY_WINDOW = 14;
-
-function freeWord(n: number, t: (key: string) => string) {
-  if (n === 1) return t("freeOne");
-  if (n >= 2 && n <= 4) return t("freeFew");
-  return t("freeMany");
-}
-
-function startOfDay(d: Date) {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
+import { BookingSummary, MobileBookingBar } from "./booking-summary";
+import { DonePanel } from "./done-panel";
+import { ReviewStep, type GuestDetails } from "./review-step";
+import { ServiceStep } from "./service-step";
+import { TimeStep } from "./time-step";
+import { WizardStepper } from "./wizard-stepper";
+import { WorkerStep } from "./worker-step";
+import type { RecapRow, Step } from "./wizard-types";
 
 export function BookingWizard({
   salon,
@@ -76,11 +56,7 @@ export function BookingWizard({
   const [favoriteSaved, setFavoriteSaved] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [note, setNote] = useState("");
-  const [wantsReminder, setWantsReminder] = useState(true);
-  const [clientName, setClientName] = useState("");
-  const [clientPhone, setClientPhone] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
+  const [details, setDetails] = useState<GuestDetails>({ name: "", phone: "", email: "", note: "", wantsReminder: true });
   const [done, setDone] = useState(false);
 
   const allFavorites = useMemo(() => [...favorites, ...sessionFavorites], [favorites, sessionFavorites]);
@@ -97,7 +73,6 @@ export function BookingWizard({
 
   const favoriteWorkerId = serviceId != null ? pickFavoriteWorkerId(allFavorites, serviceId) : null;
   const lastUsedWorkerId = serviceId != null ? pickLastUsedWorkerId(clientBookings, serviceId) : null;
-  const lastUsedWorkerName = firstName(workers.find((w) => w.id === lastUsedWorkerId)?.name ?? "");
   const isFavoriteEligible = favoriteWorkerId != null && eligibleWorkers.some((w) => w.id === favoriteWorkerId);
   const showFavoriteCard = isFavoriteEligible && !revealAllWorkers;
   const alreadyFavorite = worker != null && favoriteWorkerId === worker.id;
@@ -111,12 +86,8 @@ export function BookingWizard({
     setServiceId(id);
     setRevealAllWorkers(false);
     const svc = services.find((s) => s.id === id);
-    const eligible = svc ? workers.filter((w) => svc.workerIds.includes(w.id)) : [];
-    const fav = pickFavoriteWorkerId(allFavorites, id);
-    const last = pickLastUsedWorkerId(clientBookings, id);
-    if (fav != null && eligible.some((w) => w.id === fav)) setWorkerChoice(fav);
-    else if (last != null && eligible.some((w) => w.id === last)) setWorkerChoice(last);
-    else setWorkerChoice(null);
+    const eligibleIds = svc ? workers.filter((w) => svc.workerIds.includes(w.id)).map((w) => w.id) : [];
+    setWorkerChoice(pickPreselectedWorkerId(allFavorites, clientBookings, id, eligibleIds));
     go(solo ? 2 : 1);
   }
 
@@ -140,55 +111,18 @@ export function BookingWizard({
     go(3);
   }
 
-  const days = useMemo(() => {
-    const list: Date[] = [];
-    const base = startOfDay(new Date());
-    for (let i = 0; i < DAY_WINDOW; i++) {
-      const d = new Date(base);
-      d.setDate(base.getDate() + i);
-      list.push(d);
-    }
-    return list;
-  }, []);
-
-  const slots = useMemo(
-    () => (service && activeWorkerIds.length ? computeSlots({ salon, service, workerIds: activeWorkerIds, date: selectedDate }) : []),
-    [salon, service, activeWorkerIds, selectedDate],
-  );
-  const freeSlots = slots.filter((s) => !s.taken);
-  const firstFreeSlot = freeSlots[0] ?? null;
-
-  const firstFreeDay = useMemo(() => {
-    if (!service || !activeWorkerIds.length) return null;
-    for (const d of days) {
-      if (countFreeSlots({ salon, service, workerIds: activeWorkerIds, date: d }) > 0) return d;
-    }
-    return null;
-  }, [salon, service, activeWorkerIds, days]);
-
-  const groups = useMemo(() => {
-    const parts: { label: string; from: number; to: number }[] = [
-      { label: "Jutro", from: 0, to: 720 },
-      { label: "Popodne", from: 720, to: 1020 },
-      { label: "Veče", from: 1020, to: 1440 },
-    ];
-    return parts
-      .map((p) => ({
-        label: p.label,
-        items: slots.filter((s) => {
-          const [h, m] = s.time.split(":").map(Number);
-          const minutes = h * 60 + m;
-          return minutes >= p.from && minutes < p.to;
-        }),
-      }))
-      .filter((g) => g.items.length > 0);
-  }, [slots]);
-
   const labels = solo ? [t("stepService"), t("stepTime"), t("stepReview")] : [t("stepService"), t("stepStaff"), t("stepTime"), t("stepReview")];
   const stepIndexes = solo ? [0, 2, 3] : [0, 1, 2, 3];
   const currentLabelIndex = done ? labels.length : stepIndexes.indexOf(step);
 
-  const canNext = step === 0 ? !!serviceId : step === 1 ? !!workerChoice : step === 2 ? !!selectedTime : isGuestBookingDetailsValid({ name: clientName, phone: clientPhone, email: clientEmail });
+  const canNext =
+    step === 0
+      ? !!serviceId
+      : step === 1
+        ? !!workerChoice
+        : step === 2
+          ? !!selectedTime
+          : isGuestBookingDetailsValid({ name: details.name, phone: details.phone, email: details.email });
 
   function handleNext() {
     if (!canNext) return;
@@ -219,20 +153,21 @@ export function BookingWizard({
   }
 
   const timeStr = selectedTime ? `${formatDayLabel(selectedDate)}, ${selectedTime}` : t("recapTimeUnset");
-  const recap = service
+  const recap: RecapRow[] = service
     ? [
-        { icon: Scissors, label: t("recapService"), value: service.name },
+        { key: "service", icon: Scissors, label: t("recapService"), value: service.name },
         {
+          key: "staff",
           icon: User,
           label: t("recapStaff"),
           value: solo && worker ? t("recapStaffSolo", { name: worker.name }) : worker ? worker.name : t("recapStaffAny"),
         },
-        { icon: Calendar, label: t("recapTime"), value: timeStr },
-        { icon: Clock, label: t("recapDuration"), value: `${service.durationMinutes} min` },
+        { key: "time", icon: Calendar, label: t("recapTime"), value: timeStr },
+        { key: "duration", icon: Clock, label: t("recapDuration"), value: `${service.durationMinutes} min` },
       ]
     : [];
 
-  const barLine = step === 2 && !selectedTime ? t("barLinePickTime") : service ? `${service.name} · ${selectedTime ? `${formatDayLabel(selectedDate)}, ${selectedTime}` : `${service.durationMinutes} min`}` : "";
+  const barLine = step === 2 && !selectedTime ? t("barLinePickTime") : service ? `${service.name} · ${selectedTime ? timeStr : `${service.durationMinutes} min`}` : "";
 
   return (
     <div className="flex min-h-full flex-col bg-surface-canvas">
@@ -250,402 +185,58 @@ export function BookingWizard({
         </div>
 
         {!done && (
-          <div className="hidden items-center gap-3 rounded-card bg-card p-4 shadow-card md:flex">
-            {labels.map((label, i) => {
-              const isDone = i < currentLabelIndex;
-              const isActive = i === currentLabelIndex;
-              return (
-                <div key={label} className="flex flex-1 items-center gap-3 last:flex-none">
-                  <button
-                    type="button"
-                    onClick={() => stepIndexes[i] <= reached && go(stepIndexes[i] as Step)}
-                    className="flex items-center gap-2.5"
-                  >
-                    <span
-                      className={cn(
-                        "flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs font-bold",
-                        isDone || isActive ? "bg-brand text-primary-foreground" : "bg-surface-sunken text-text-muted",
-                      )}
-                    >
-                      {isDone ? <Icon icon={Check} size={14} /> : i + 1}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-sm whitespace-nowrap",
-                        isActive ? "font-semibold text-text-primary" : isDone ? "font-medium text-brand" : "font-medium text-text-muted",
-                      )}
-                    >
-                      {label}
-                    </span>
-                  </button>
-                  {i < labels.length - 1 && <span className={cn("h-px flex-1", i < currentLabelIndex ? "bg-brand" : "bg-border-subtle")} />}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {!done && (
-          <div className="flex flex-col gap-2 md:hidden">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold text-text-primary">{t("stepLabel", { n: currentLabelIndex + 1, label: labels[currentLabelIndex] })}</span>
-              <span className="text-xs text-text-secondary">{t("stepCount", { n: currentLabelIndex + 1, total: labels.length })}</span>
-            </div>
-            <div className="flex gap-1">
-              {labels.map((label, i) => (
-                <span
-                  key={label}
-                  className={cn("h-1 flex-1 rounded-full", i <= currentLabelIndex ? "bg-brand" : "bg-border-subtle")}
-                />
-              ))}
-            </div>
-          </div>
+          <WizardStepper labels={labels} stepIndexes={stepIndexes} currentLabelIndex={currentLabelIndex} reached={reached} onGo={go} />
         )}
 
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="flex min-w-0 flex-col gap-5">
             {done ? (
-              <div className="flex flex-col gap-4 rounded-card bg-card p-6 shadow-card">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-info-bg text-info-fg">
-                    <Icon icon={CalendarCheck} size={22} />
-                  </span>
-                  <div>
-                    <h2 className="text-xl font-bold text-text-primary">{t("doneTitle")}</h2>
-                    <p className="mt-1 text-sm text-text-secondary">{t("doneSub")}</p>
-                  </div>
-                </div>
-                <div className="h-px bg-border-subtle" />
-                <div className="flex flex-col gap-2.5">
-                  {recap.map((r) => (
-                    <div key={r.label} className="flex items-center gap-3 text-sm">
-                      <Icon icon={r.icon} size={16} className="flex-none text-icon-muted" />
-                      <span className="text-text-secondary">{r.label}</span>
-                      <span className="flex-1" />
-                      <span className="text-right font-semibold text-text-primary">{r.value}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="rounded-md bg-surface-sunken px-4 py-3 text-sm text-text-secondary">
-                  {t("paymentCancelNote")}
-                </div>
-
-                {worker && service && (favoriteSaved || !alreadyFavorite) && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-control bg-brand-subtle px-4 py-3">
-                    <span className="flex items-start gap-2.5 text-sm text-text-primary">
-                      <Icon icon={Heart} size={16} className="mt-0.5 flex-none text-brand" />
-                      {favoriteSaved
-                        ? t("favoriteSavedNote", { worker: worker.name, service: service.name })
-                        : t("favoriteOfferNote", { worker: worker.name, service: service.name })}
-                    </span>
-                    {!favoriteSaved && (
-                      <Button type="button" variant="secondary" size="sm" onClick={confirmSaveFavorite}>
-                        {t("saveFavoriteCta")}
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-3">
-                  <Button asChild variant="primary" size="md">
-                    <Link href="/moji-termini">{t("myBookings")}</Link>
-                  </Button>
-                  <Button type="button" variant="secondary" size="md" onClick={restart}>
-                    {t("bookAnother")}
-                  </Button>
-                </div>
-              </div>
+              <DonePanel
+                recap={recap}
+                worker={worker}
+                service={service}
+                favoriteSaved={favoriteSaved}
+                alreadyFavorite={alreadyFavorite}
+                onSaveFavorite={confirmSaveFavorite}
+                onRestart={restart}
+              />
             ) : (
               <>
-                {step === 0 && (
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <h2 className="text-xl font-bold text-text-primary md:text-2xl">{t("serviceTitle")}</h2>
-                      <p className="mt-1.5 text-sm text-text-secondary">{t("serviceLead")}</p>
-                    </div>
-                    <div className="flex flex-col gap-1 rounded-card bg-card p-2 shadow-card">
-                      {services.map((s) => {
-                        const selected = s.id === serviceId;
-                        const finalPrice = getEffectivePrice(s.price, s.discountPercent);
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => pickService(s.id)}
-                            className={cn(
-                              "flex items-center justify-between gap-4 rounded-control p-3.5 text-left transition-colors",
-                              selected ? "bg-brand-subtle" : "hover:bg-surface-sunken",
-                            )}
-                          >
-                            <div className="flex min-w-0 flex-col gap-1">
-                              <span className="font-bold text-text-primary">{s.name}</span>
-                              <span className="text-sm text-text-secondary">{s.durationMinutes} min</span>
-                            </div>
-                            <div className="flex flex-none items-center gap-3">
-                              <div className="flex flex-col items-end">
-                                {s.discountPercent != null && <span className="text-xs text-text-muted line-through">{formatPrice(s.price)}</span>}
-                                <span className="price text-base">{formatPrice(finalPrice)}</span>
-                              </div>
-                              <span
-                                className={cn(
-                                  "inline-flex h-9 items-center rounded-control px-3.5 text-sm font-medium",
-                                  selected ? "bg-brand text-primary-foreground" : "border border-border-subtle bg-card text-brand",
-                                )}
-                              >
-                                {selected ? t("serviceSelected") : t("serviceSelect")}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                {step === 0 && <ServiceStep services={services} serviceId={serviceId} onPick={pickService} />}
 
                 {step === 1 && (
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <h2 className="text-xl font-bold text-text-primary md:text-2xl">{t("staffTitle")}</h2>
-                      <p className="mt-1.5 text-sm text-text-secondary">{t("staffLead")}</p>
-                    </div>
-
-                    {showFavoriteCard ? (
-                      (() => {
-                        const favWorker = workers.find((w) => w.id === favoriteWorkerId);
-                        if (!favWorker) return null;
-                        return (
-                          <div className="flex flex-col items-center gap-3 rounded-card bg-card p-6 text-center shadow-card">
-                            <span className="inline-flex items-center gap-1.5 rounded-pill bg-danger-bg px-3 py-1 text-2xs font-semibold text-danger-fg">
-                              <Icon icon={Heart} size={12} />
-                              {t("staffFavoriteBadge")}
-                            </span>
-                            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 text-base font-bold text-indigo-400">
-                              {initialsFromName(favWorker.name)}
-                            </span>
-                            <span className="flex flex-col gap-0.5">
-                              <span className="text-base font-bold text-text-primary">{favWorker.name}</span>
-                              <span className="text-sm text-text-secondary">{favWorker.position}</span>
-                            </span>
-                            <div className="flex flex-wrap justify-center gap-2 pt-1">
-                              <Button type="button" variant="accent" size="md" onClick={() => pickWorker(favWorker.id)}>
-                                {t("staffContinueWith", { name: firstName(favWorker.name) })}
-                              </Button>
-                              <Button type="button" variant="secondary" size="md" onClick={() => setRevealAllWorkers(true)}>
-                                {t("staffChangeWorker")}
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      <>
-                        {!favoriteWorkerId && lastUsedWorkerId != null && (
-                          <span className="inline-flex w-fit items-center gap-1.5 rounded-pill bg-brand-subtle px-3 py-1.5 text-xs font-medium text-brand">
-                            <Icon icon={Check} size={13} />
-                            {t("staffSuggestedNote", { name: lastUsedWorkerName })}
-                          </span>
-                        )}
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
-                          <button
-                            type="button"
-                            onClick={() => pickWorker("any")}
-                            className={cn(
-                              "flex flex-col items-center gap-2 rounded-card p-4 text-center shadow-card",
-                              workerChoice === "any" ? "bg-brand-subtle ring-1 ring-inset ring-indigo-200" : "bg-card",
-                            )}
-                          >
-                            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-sunken text-icon-muted">
-                              <Icon icon={User} size={20} />
-                            </span>
-                            <span className="text-sm font-bold text-text-primary">{t("staffAnyName")}</span>
-                            <span className="text-xs text-text-secondary">{t("staffAnyRole")}</span>
-                          </button>
-                          {eligibleWorkers.map((w) => (
-                            <button
-                              key={w.id}
-                              type="button"
-                              onClick={() => pickWorker(w.id)}
-                              className={cn(
-                                "flex flex-col items-center gap-2 rounded-card p-4 text-center shadow-card",
-                                workerChoice === w.id ? "bg-brand-subtle ring-1 ring-inset ring-indigo-200" : "bg-card",
-                              )}
-                            >
-                              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-400">
-                                {initialsFromName(w.name)}
-                              </span>
-                              <span className="text-sm font-bold text-text-primary">{w.name}</span>
-                              <span className="text-xs text-text-secondary">{w.position}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <WorkerStep
+                    workers={workers}
+                    eligibleWorkers={eligibleWorkers}
+                    workerChoice={workerChoice}
+                    favoriteWorkerId={favoriteWorkerId}
+                    lastUsedWorkerId={lastUsedWorkerId}
+                    showFavoriteCard={showFavoriteCard}
+                    onPick={pickWorker}
+                    onRevealAll={() => setRevealAllWorkers(true)}
+                  />
                 )}
 
                 {step === 2 && service && (
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <h2 className="text-xl font-bold text-text-primary md:text-2xl">{t("timeTitle")}</h2>
-                      <p className="mt-1.5 text-sm text-text-secondary">
-                        {t("timeLead", { duration: service.durationMinutes })}
-                      </p>
-                    </div>
-
-                    {firstFreeSlot && (
-                      <div className="flex flex-col gap-2.5 rounded-card bg-card p-4 shadow-card">
-                        <span className="eyebrow">{t("quickFirstFreeTag")}</span>
-                        <button
-                          type="button"
-                          onClick={() => pickSlot(selectedDate, firstFreeSlot.time)}
-                          className={cn(
-                            "inline-flex w-fit items-center rounded-control px-3.5 py-2 text-sm font-bold",
-                            selectedTime === firstFreeSlot.time
-                              ? "bg-brand text-primary-foreground"
-                              : "bg-brand-subtle text-brand",
-                          )}
-                        >
-                          {formatDayLabel(selectedDate)}, {firstFreeSlot.time}
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {days.map((d) => {
-                        const count = service ? countFreeSlots({ salon, service, workerIds: activeWorkerIds, date: d }) : 0;
-                        const isSelected = isSameDay(d, selectedDate);
-                        const isClosed = !computeSlots({ salon, service, workerIds: activeWorkerIds, date: d }).length && count === 0;
-                        return (
-                          <button
-                            key={d.toISOString()}
-                            type="button"
-                            onClick={() => setSelectedDate(startOfDay(d))}
-                            className={cn(
-                              "flex flex-none flex-col items-center gap-0.5 rounded-control px-0 py-2.5",
-                              isSelected ? "bg-brand text-primary-foreground" : "border border-border-subtle bg-card text-text-primary",
-                            )}
-                            style={{ width: 70 }}
-                          >
-                            <span className="text-2xs uppercase tracking-wide opacity-75">{formatWeekdayShort(d)}</span>
-                            <span className="text-lg font-bold leading-tight">{d.getDate()}</span>
-                            <span className={cn("text-2xs", isSelected ? "opacity-85" : count > 0 ? "text-success-fg" : "text-text-muted")}>
-                              {count > 0 ? `${count} ${freeWord(count, t)}` : isClosed ? t("dayClosed") : t("dayFull")}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {freeSlots.length === 0 ? (
-                      <div className="flex flex-col items-center gap-3 rounded-card bg-card p-8 text-center shadow-card">
-                        <span className="text-sm text-text-secondary">{t("emptyDayTitle")}</span>
-                        {firstFreeDay && (
-                          <Button type="button" variant="secondary" size="sm" onClick={() => setSelectedDate(startOfDay(firstFreeDay))}>
-                            {t("jumpToFirstFree", { day: formatDayLabel(firstFreeDay) })}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        {groups.map((g) => (
-                          <div key={g.label} className="flex flex-col gap-2.5 rounded-card bg-card p-4 shadow-card">
-                            <span className="text-sm font-bold text-text-primary">{g.label}</span>
-                            <div className="grid grid-cols-[repeat(auto-fill,minmax(76px,1fr))] gap-2">
-                              {g.items.map((slot) => (
-                                <button
-                                  key={slot.time}
-                                  type="button"
-                                  disabled={slot.taken}
-                                  onClick={() => pickSlot(selectedDate, slot.time)}
-                                  className={cn(
-                                    "h-9 rounded-control text-sm font-medium",
-                                    slot.taken
-                                      ? "cursor-not-allowed bg-surface-sunken text-text-muted line-through"
-                                      : selectedTime === slot.time
-                                        ? "bg-brand text-primary-foreground"
-                                        : "border border-border-subtle bg-card text-text-primary hover:bg-brand-subtle",
-                                  )}
-                                >
-                                  {slot.time}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <TimeStep
+                    salon={salon}
+                    service={service}
+                    activeWorkerIds={activeWorkerIds}
+                    selectedDate={selectedDate}
+                    selectedTime={selectedTime}
+                    onSelectDate={setSelectedDate}
+                    onPickSlot={pickSlot}
+                  />
                 )}
 
                 {step === 3 && service && (
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <h2 className="text-xl font-bold text-text-primary md:text-2xl">{t("reviewTitle")}</h2>
-                      <p className="mt-1.5 text-sm text-text-secondary">{t("reviewLead")}</p>
-                    </div>
-
-                    <div className="flex flex-col rounded-card bg-card p-2 shadow-card">
-                      {recap.map((r, i) => (
-                        <div
-                          key={r.label}
-                          className={cn("flex items-center gap-3 p-3.5", i < recap.length - 1 && "border-b border-border-subtle")}
-                        >
-                          <Icon icon={r.icon} size={16} className="flex-none text-icon-muted" />
-                          <div className="flex min-w-0 flex-1 flex-col">
-                            <span className="text-xs text-text-secondary">{r.label}</span>
-                            <span className="text-sm font-semibold text-text-primary">{r.value}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => go(r.label === t("recapService") ? 0 : r.label === t("recapStaff") ? (solo ? 0 : 1) : 2)}
-                            className="h-9 flex-none rounded-control border border-border-subtle bg-card px-3.5 text-sm font-medium text-brand"
-                          >
-                            {t("edit")}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex flex-col gap-4 rounded-card bg-card p-5 shadow-card">
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                        <label className="flex flex-col gap-1.5">
-                          <span className="text-sm font-medium text-text-primary">{t("clientNameLabel")}</span>
-                          <Input value={clientName} onChange={(e) => setClientName(e.target.value)} />
-                          {hasText(clientName) && !isValidGuestName(clientName) && <span className="text-xs text-danger-fg">{t("invalidNameHint")}</span>}
-                        </label>
-                        <label className="flex flex-col gap-1.5">
-                          <span className="text-sm font-medium text-text-primary">{t("clientPhoneLabel")}</span>
-                          <Input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} type="tel" />
-                          {hasText(clientPhone) && !isValidPhone(clientPhone) && <span className="text-xs text-danger-fg">{t("invalidPhoneHint")}</span>}
-                        </label>
-                        <label className="flex flex-col gap-1.5">
-                          <span className="text-sm font-medium text-text-primary">{t("clientEmailLabel")}</span>
-                          <Input value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} type="email" />
-                          {hasText(clientEmail) && !isValidEmail(clientEmail) && <span className="text-xs text-danger-fg">{t("invalidEmailHint")}</span>}
-                        </label>
-                      </div>
-                      <label className="flex flex-col gap-1.5">
-                        <span className="text-sm font-medium text-text-primary">{t("noteLabel")}</span>
-                        <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("notePlaceholder")} />
-                      </label>
-                      <label className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={wantsReminder}
-                          onChange={(e) => setWantsReminder(e.target.checked)}
-                          className="mt-0.5 h-5 w-5 flex-none accent-[var(--brand)]"
-                        />
-                        <span>
-                          <span className="block text-sm font-medium text-text-primary">{t("reminderLabel")}</span>
-                          <span className="block text-xs text-text-secondary">{t("reminderSub")}</span>
-                        </span>
-                      </label>
-                      <div className="flex gap-3 rounded-md bg-info-bg p-3.5 text-info-fg">
-                        <Icon icon={Info} size={18} className="flex-none" />
-                        <span className="text-sm">{t("pendingNotice")}</span>
-                      </div>
-                    </div>
-                  </div>
+                  <ReviewStep
+                    recap={recap}
+                    solo={solo}
+                    details={details}
+                    onChange={(patch) => setDetails((cur) => ({ ...cur, ...patch }))}
+                    onEdit={go}
+                  />
                 )}
 
                 <div className="hidden flex-wrap gap-3 md:flex">
@@ -664,49 +255,15 @@ export function BookingWizard({
             )}
           </div>
 
-          {!done && service && (
-            <div className="hidden flex-col gap-3 rounded-card bg-card p-6 shadow-card lg:sticky lg:top-24 lg:flex">
-              <span className="eyebrow">{t("yourBooking")}</span>
-              <span className="text-lg font-bold text-text-primary">{salon.name}</span>
-              <span className="text-xs text-text-secondary">{salon.address}</span>
-              <div className="h-px bg-border-subtle" />
-              {recap.map((r) => (
-                <div key={r.label} className="flex items-start gap-2.5 text-sm">
-                  <Icon icon={r.icon} size={16} className="mt-0.5 flex-none text-icon-muted" />
-                  <span className={r.label === t("recapTime") && !selectedTime ? "text-text-secondary" : "text-text-primary"}>
-                    {r.value}
-                  </span>
-                </div>
-              ))}
-              <div className="h-px bg-border-subtle" />
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm text-text-secondary">{t("total")}</span>
-                <span className="text-2xl font-bold text-text-primary">{formatPrice(servicePrice)}</span>
-              </div>
-              <span className="text-xs text-text-secondary">{t("paymentCancelNote")}</span>
-            </div>
-          )}
+          {!done && service && <BookingSummary salon={salon} recap={recap} timeSelected={!!selectedTime} total={servicePrice} />}
         </div>
       </main>
 
       {!done && service && (
-        <div className="sticky bottom-0 z-10 flex items-center gap-3 border-t border-border-subtle bg-white/86 px-4 py-3 shadow-inset-line backdrop-blur-sticky md:hidden">
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="text-lg font-bold leading-tight text-text-primary">{formatPrice(servicePrice)}</span>
-            <span className="truncate text-xs text-text-secondary">{barLine}</span>
-          </div>
-          <Button type="button" variant="accent" size="lg" disabled={!canNext} onClick={handleNext} className="flex-none">
-            {step === 3 ? t("confirm") : t("next")}
-            <Icon icon={step === 3 ? CalendarCheck : ArrowRight} size={18} />
-          </Button>
-        </div>
+        <MobileBookingBar total={servicePrice} line={barLine} isLastStep={step === 3} canNext={canNext} onNext={handleNext} />
       )}
 
       <Footer />
     </div>
   );
-}
-
-function isSameDay(a: Date, b: Date) {
-  return a.toDateString() === b.toDateString();
 }

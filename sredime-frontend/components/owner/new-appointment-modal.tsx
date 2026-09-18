@@ -10,17 +10,11 @@ import { Icon } from "@/components/ui/icon";
 import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { cn } from "@/lib/utils";
 import { formatPrice, formatWeekdayShort, getEffectivePrice } from "@/lib/format";
-import { hoursForDate } from "@/lib/api/availability";
+import { computeOwnerSlots } from "@/lib/api/dashboard";
 import { startOfDay } from "@/lib/date";
 import { hasText, isGuestClientValid, isValidGuestName, isValidPhone } from "@/lib/validation";
 import type { BookingDetails, SalonClientSummary } from "@/lib/api/bookings";
 import type { Salon, Service, Worker } from "@/types/entities";
-
-const SLOT_INTERVAL = 30;
-
-function hhmm(minutes: number) {
-  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-}
 
 export interface NewBookingInput {
   clientName: string;
@@ -77,33 +71,10 @@ export function NewAppointmentModal({
   }, []);
   const date = days[dayOffset];
 
-  const slots = useMemo(() => {
-    if (!activeWorkerId) return [];
-    const hours = hoursForDate(salon, date);
-    if (!hours) return [];
-    const need = service.durationMinutes + service.bufferMinutes;
-    const taken = existingBookings.filter((b) => {
-      if (b.worker.id !== activeWorkerId) return false;
-      const bd = new Date(b.scheduledAt);
-      return bd.getFullYear() === date.getFullYear() && bd.getMonth() === date.getMonth() && bd.getDate() === date.getDate();
-    });
-    const busyRanges = taken.map((b) => {
-      const bd = new Date(b.scheduledAt);
-      const start = bd.getHours() * 60 + bd.getMinutes();
-      return { start, end: start + b.service.durationMinutes + 10 };
-    });
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-    const list: { time: string; taken: boolean }[] = [];
-    for (let t2 = hours.open; t2 + need <= hours.close; t2 += SLOT_INTERVAL) {
-      if (isToday && t2 <= nowMinutes) continue;
-      const overlaps = busyRanges.some((r) => t2 < r.end && t2 + need > r.start);
-      list.push({ time: hhmm(t2), taken: overlaps });
-    }
-    return list;
-  }, [salon, date, service, activeWorkerId, existingBookings]);
+  const slots = useMemo(
+    () => (activeWorkerId ? computeOwnerSlots({ salon, service, workerId: activeWorkerId, date, existingBookings }) : []),
+    [salon, date, service, activeWorkerId, existingBookings],
+  );
 
   const selectedClient = clients.find((c) => c.name === clientName);
   const who = mode === "existing" ? clientName : guestName.trim();

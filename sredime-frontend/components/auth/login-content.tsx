@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarCheck, Eye, EyeOff, Globe, Apple, Info, Repeat, Store, TriangleAlert, User, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useFlashToast } from "@/hooks/use-flash-toast";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Logo } from "@/components/chrome/logo";
 import { Button } from "@/components/ui/button";
@@ -21,12 +22,7 @@ export function LoginContent() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
-
-  function flash(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast((cur) => (cur === msg ? null : cur)), 2600);
-  }
+  const { toast, flash } = useFlashToast();
 
   function goToPath(path: string, msg: string) {
     flash(msg);

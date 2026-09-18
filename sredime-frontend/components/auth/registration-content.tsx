@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useFlashToast } from "@/hooks/use-flash-toast";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Logo } from "@/components/chrome/logo";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export function RegistrationContent() {
   const [step, setStep] = useState<OwnerStep>(1);
   const [done, setDone] = useState(false);
   const [terms, setTerms] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
+  const { toast, flash } = useFlashToast();
 
   const [ime, setIme] = useState("");
   const [kontakt, setKontakt] = useState("");
@@ -59,11 +60,6 @@ export function RegistrationContent() {
 
   const isOwner = role === "vlasnik";
   const isDone = isOwner && done;
-
-  function flash(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast((cur) => (cur === msg ? null : cur)), 2600);
-  }
 
   function selectRole(r: RegistrationRole) {
     setRole(r);
