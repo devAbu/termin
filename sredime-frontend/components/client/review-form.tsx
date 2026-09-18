@@ -11,6 +11,7 @@ import { Icon } from "@/components/ui/icon";
 import { StarRating } from "@/components/discovery/star-rating";
 import { cn } from "@/lib/utils";
 import { formatMonthShort } from "@/lib/format";
+import { isRatingSelected } from "@/lib/validation";
 import type { BookingDetails } from "@/lib/api/bookings";
 import type { Review } from "@/types/entities";
 
@@ -41,7 +42,7 @@ export function ReviewForm({
   const when = `${scheduled.getDate()}. ${formatMonthShort(scheduled)} ${scheduled.getFullYear()}, ${String(scheduled.getHours()).padStart(2, "0")}:${String(scheduled.getMinutes()).padStart(2, "0")}`;
 
   function submit() {
-    if (rating === 0) return;
+    if (!isRatingSelected(rating)) return;
     setStage("done");
   }
 
@@ -167,7 +168,7 @@ export function ReviewForm({
                 <Button asChild variant="secondary" size="lg" className="flex-1">
                   <Link href="/moji-termini">{t("notNow")}</Link>
                 </Button>
-                <Button type="button" variant="primary" size="lg" className="flex-[1.4]" disabled={rating === 0} onClick={submit}>
+                <Button type="button" variant="primary" size="lg" className="flex-[1.4]" disabled={!isRatingSelected(rating)} onClick={submit}>
                   {t("submit")}
                 </Button>
               </div>

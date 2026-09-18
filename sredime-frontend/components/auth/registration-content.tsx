@@ -31,6 +31,7 @@ import { Icon } from "@/components/ui/icon";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { CATEGORY_META, CITIES } from "@/lib/constants/categories";
+import { validateAccountFields, validateSalonBasics, validateTermsAccepted } from "@/lib/validation";
 
 type RegistrationRole = "klijent" | "vlasnik";
 type OwnerStep = 1 | 2 | 3;
@@ -71,12 +72,17 @@ export function RegistrationContent() {
   }
 
   function requireAccountFields() {
-    if (!ime.trim() || !kontakt.trim() || !lozinka.trim()) {
-      flash(t("missingFieldsToast"));
-      return false;
-    }
-    if (lozinka.length < 8) {
-      flash(t("passwordTooShortToast"));
+    const error = validateAccountFields({ name: ime, contact: kontakt, password: lozinka });
+    if (error) {
+      flash(
+        t(
+          error === "missingFields"
+            ? "missingFieldsToast"
+            : error === "invalidContact"
+              ? "invalidContactToast"
+              : "passwordTooShortToast",
+        ),
+      );
       return false;
     }
     return true;
@@ -84,7 +90,7 @@ export function RegistrationContent() {
 
   function handleClientSubmit() {
     if (!requireAccountFields()) return;
-    if (!terms) {
+    if (validateTermsAccepted(terms)) {
       flash(t("termsRequiredToast"));
       return;
     }
@@ -98,15 +104,16 @@ export function RegistrationContent() {
   }
 
   function handleOwnerStep2Continue() {
-    if (!salon.trim() || !adresa.trim() || !telefon.trim()) {
-      flash(t("missingFieldsToast"));
+    const error = validateSalonBasics({ name: salon, address: adresa, phone: telefon });
+    if (error) {
+      flash(t(error === "missingFields" ? "missingFieldsToast" : "invalidPhoneToast"));
       return;
     }
     setStep(3);
   }
 
   function handleOwnerSubmit() {
-    if (!terms) {
+    if (validateTermsAccepted(terms)) {
       flash(t("termsRequiredToast"));
       return;
     }

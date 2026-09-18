@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
 import { initialsFromName } from "@/lib/format";
 import { SESSION_NAMES } from "@/lib/session";
+import { validateNewPassword, validateTermsAccepted } from "@/lib/validation";
 import type { Salon } from "@/types/entities";
 
 /**
@@ -35,19 +36,20 @@ export function WorkerInviteContent({ salon, token }: { salon: Salon; token: str
   const [requested, setRequested] = useState(false);
 
   function handleSubmit() {
-    if (!password || !confirmPassword) {
-      setError(t("passwordMismatchToast"));
+    const passwordError = validateNewPassword({ password, confirmPassword });
+    if (passwordError) {
+      setError(
+        t(
+          passwordError === "missingFields"
+            ? "missingFieldsToast"
+            : passwordError === "passwordTooShort"
+              ? "passwordTooShortToast"
+              : "passwordMismatchToast",
+        ),
+      );
       return;
     }
-    if (password.length < 8) {
-      setError(t("passwordTooShortToast"));
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError(t("passwordMismatchToast"));
-      return;
-    }
-    if (!terms) {
+    if (validateTermsAccepted(terms)) {
       setError(t("termsRequiredToast"));
       return;
     }

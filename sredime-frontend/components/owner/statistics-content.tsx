@@ -22,9 +22,10 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatMonthShort, getEffectivePrice, initialsFromName } from "@/lib/format";
+import { formatPrice, formatMonthShort, initialsFromName } from "@/lib/format";
 import { SESSION_NAMES } from "@/lib/session";
 import type { BookingDetails } from "@/lib/api/bookings";
+import { completedRevenue } from "@/lib/api/booking-metrics";
 import {
   getStatsRange,
   getPreviousRange,
@@ -87,8 +88,8 @@ export function StatisticsContent({
 
   const completed = filtered.filter((b) => b.status === "completed");
   const prevCompleted = prevFiltered.filter((b) => b.status === "completed");
-  const revenue = completed.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
-  const prevRevenue = prevCompleted.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
+  const revenue = completedRevenue(completed);
+  const prevRevenue = completedRevenue(prevCompleted);
   const avg = completed.length ? revenue / completed.length : 0;
   const prevAvg = prevCompleted.length ? prevRevenue / prevCompleted.length : 0;
 

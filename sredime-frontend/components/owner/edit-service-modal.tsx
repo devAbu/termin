@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
 import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { formatPrice, getEffectivePrice } from "@/lib/format";
+import { MAX_DISCOUNT_PERCENT, MIN_DISCOUNT_PERCENT, validateServiceEdit } from "@/lib/validation";
 import type { Service } from "@/types/entities";
 
 export function EditServiceModal({
@@ -35,16 +36,17 @@ export function EditServiceModal({
   const finalPrice = discountOn && priceNum > 0 && discountNum > 0 ? getEffectivePrice(priceNum, discountNum) : null;
 
   function handleSave() {
-    if (!name.trim()) {
-      setError(t("serviceNameRequiredToast"));
-      return;
-    }
-    if (!Number.isFinite(priceNum) || priceNum <= 0) {
-      setError(t("servicePriceInvalidToast"));
-      return;
-    }
-    if (discountOn && (!Number.isFinite(discountNum) || discountNum < 1 || discountNum > 90)) {
-      setError(t("discountPercentInvalidToast"));
+    const errorCode = validateServiceEdit({ name, price: priceNum, discountOn, discountPercent: discountNum });
+    if (errorCode) {
+      setError(
+        t(
+          errorCode === "nameRequired"
+            ? "serviceNameRequiredToast"
+            : errorCode === "priceInvalid"
+              ? "servicePriceInvalidToast"
+              : "discountPercentInvalidToast",
+        ),
+      );
       return;
     }
     setError(null);
@@ -109,7 +111,7 @@ export function EditServiceModal({
               <label className="flex flex-col gap-1.5">
                 <span className="eyebrow">{t("discountPercentLabel")}</span>
                 <div className="relative flex items-center">
-                  <Input type="number" min="1" max="90" value={discountPercent} onChange={(e) => setDiscountPercent(e.target.value)} size="lg" className="pr-9" />
+                  <Input type="number" min={MIN_DISCOUNT_PERCENT} max={MAX_DISCOUNT_PERCENT} value={discountPercent} onChange={(e) => setDiscountPercent(e.target.value)} size="lg" className="pr-9" />
                   <Icon icon={Percent} size={16} className="pointer-events-none absolute right-3 text-icon-muted" />
                 </div>
               </label>

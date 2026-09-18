@@ -11,16 +11,12 @@ import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { cn } from "@/lib/utils";
 import { formatPrice, formatWeekdayShort, getEffectivePrice } from "@/lib/format";
 import { hoursForDate } from "@/lib/api/availability";
+import { startOfDay } from "@/lib/date";
+import { hasText, isGuestClientValid, isValidGuestName, isValidPhone } from "@/lib/validation";
 import type { BookingDetails, SalonClientSummary } from "@/lib/api/bookings";
 import type { Salon, Service, Worker } from "@/types/entities";
 
 const SLOT_INTERVAL = 30;
-
-function startOfDay(d: Date) {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
 
 function hhmm(minutes: number) {
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
@@ -111,7 +107,7 @@ export function NewAppointmentModal({
 
   const selectedClient = clients.find((c) => c.name === clientName);
   const who = mode === "existing" ? clientName : guestName.trim();
-  const guestValid = guestName.trim().length > 1 && guestPhone.trim().length > 5;
+  const guestValid = isGuestClientValid({ name: guestName, phone: guestPhone });
   const ready = !!time && !!activeWorkerId && (mode === "existing" ? !!clientName : guestValid);
 
   function handleSave() {
@@ -174,10 +170,12 @@ export function NewAppointmentModal({
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-medium text-text-primary">{t("guestNameLabel")}</span>
               <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} />
+              {hasText(guestName) && !isValidGuestName(guestName) && <span className="text-xs text-danger-fg">{t("invalidNameHint")}</span>}
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-medium text-text-primary">{t("guestPhoneLabel")}</span>
               <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} type="tel" />
+              {hasText(guestPhone) && !isValidPhone(guestPhone) && <span className="text-xs text-danger-fg">{t("invalidPhoneHint")}</span>}
             </label>
           </div>
         )}

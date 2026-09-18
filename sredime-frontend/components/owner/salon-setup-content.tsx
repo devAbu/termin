@@ -33,40 +33,27 @@ import { Icon } from "@/components/ui/icon";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { initialsFromName, pluralBs } from "@/lib/format";
+import { hasText, isServiceDraftValid, isStaffDraftValid, isValidEmail, isValidPriceInput, parsePriceInput } from "@/lib/validation";
+import {
+  DEFAULT_SERVICE_DURATION_MINUTES,
+  INITIAL_DRAFT_SERVICES,
+  INITIAL_DRAFT_STAFF,
+  INITIAL_PHOTO_COUNT,
+  MAX_SALON_PHOTOS,
+  PHOTO_PLACEHOLDER_CAPTIONS,
+  SERVICE_DURATION_OPTIONS_MINUTES,
+  WORKING_TIME_OPTIONS,
+  createDefaultWeek,
+} from "@/lib/constants/salon-setup";
+import type { DayHours, DraftService, DraftStaff, StaffStatus } from "@/types/salon-setup";
 
 /** Placeholder identity until "Registracija vlasnika" (§3 u docs/PROGRESS.md) actually creates the Salon record this wizard would fill in. */
 const SALON_NAME = "Novi salon";
 const SALON_CITY = "Sarajevo";
 
 const TOTAL_STEPS = 5;
-const DURATIONS = [15, 20, 30, 45, 60, 90, 120];
-const TIMES = ["07:00", "08:00", "08:30", "09:00", "10:00", "12:00", "14:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"];
-const DAYS_BS = ["Ponedjeljak", "Utorak", "Srijeda", "Četvrtak", "Petak", "Subota", "Nedjelja"];
-const PHOTO_CAPTIONS = ["Ulaz i izlog", "Prostor salona", "Radno mjesto", "Detalj rada", "Kabina", "Recepcija"];
 
 type Step = 1 | 2 | 3 | 4 | 5;
-type StaffStatus = "owner" | "invited" | "draft";
-
-interface DraftService {
-  id: number;
-  name: string;
-  price: number;
-  duration: number;
-}
-
-interface DraftStaff {
-  id: number;
-  name: string;
-  role: string;
-  status: StaffStatus;
-}
-
-interface DayHours {
-  day: string;
-  open: boolean;
-  from: string;
-  to: string;
-}
 
 let nextServiceId = 1000;
 let nextStaffId = 1000;
@@ -78,30 +65,20 @@ export function SalonSetupContent() {
   const [sent, setSent] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  const [photoCount, setPhotoCount] = useState(3);
+  const [photoCount, setPhotoCount] = useState(INITIAL_PHOTO_COUNT);
 
-  const [services, setServices] = useState<DraftService[]>([
-    { id: 1, name: "Šišanje i pranje", price: 25, duration: 45 },
-    { id: 2, name: "Bojenje korijena", price: 60, duration: 90 },
-    { id: 3, name: "Feniranje", price: 20, duration: 30 },
-  ]);
+  const [services, setServices] = useState<DraftService[]>(INITIAL_DRAFT_SERVICES);
   const [svcName, setSvcName] = useState("");
   const [svcPrice, setSvcPrice] = useState("");
-  const [svcDuration, setSvcDuration] = useState(45);
+  const [svcDuration, setSvcDuration] = useState(DEFAULT_SERVICE_DURATION_MINUTES);
 
-  const [staff, setStaff] = useState<DraftStaff[]>([
-    { id: 1, name: "Amina Hodžić", role: "Vlasnica, frizerka", status: "owner" },
-    { id: 2, name: "Lejla Kadić", role: "Frizerka", status: "invited" },
-    { id: 3, name: "Ena Šarić", role: "Pomoćnica", status: "draft" },
-  ]);
+  const [staff, setStaff] = useState<DraftStaff[]>(INITIAL_DRAFT_STAFF);
   const [stName, setStName] = useState("");
   const [stRole, setStRole] = useState("");
   const [stEmail, setStEmail] = useState("");
   const [stSend, setStSend] = useState(true);
 
-  const [hours, setHours] = useState<DayHours[]>(
-    DAYS_BS.map((day, i) => ({ day, open: i < 6, from: "09:00", to: "19:00" })),
-  );
+  const [hours, setHours] = useState<DayHours[]>(createDefaultWeek);
 
   function flash(msg: string) {
     setToast(msg);
@@ -114,8 +91,8 @@ export function SalonSetupContent() {
   }
 
   function addService() {
-    if (!svcName.trim()) return;
-    setServices((cur) => [...cur, { id: nextServiceId++, name: svcName.trim(), price: Number(svcPrice) || 0, duration: svcDuration }]);
+    if (!isServiceDraftValid({ name: svcName, price: svcPrice })) return;
+    setServices((cur) => [...cur, { id: nextServiceId++, name: svcName.trim(), price: parsePriceInput(svcPrice), duration: svcDuration }]);
     setSvcName("");
     setSvcPrice("");
   }
@@ -125,7 +102,7 @@ export function SalonSetupContent() {
   }
 
   function addStaff() {
-    if (!stName.trim()) return;
+    if (!isStaffDraftValid({ name: stName, email: stEmail })) return;
     setStaff((cur) => [...cur, { id: nextStaffId++, name: stName.trim(), role: stRole.trim() || "Radnik", status: stSend ? "invited" : "draft" }]);
     setStName("");
     setStRole("");
@@ -239,7 +216,7 @@ export function SalonSetupContent() {
                   className="relative flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-image bg-gradient-to-br from-indigo-100 to-indigo-200 p-2.5 text-center text-indigo-400"
                 >
                   <Icon icon={ImageIcon} size={22} />
-                  <span className="text-2xs font-medium leading-tight">{PHOTO_CAPTIONS[i % PHOTO_CAPTIONS.length]}</span>
+                  <span className="text-2xs font-medium leading-tight">{PHOTO_PLACEHOLDER_CAPTIONS[i % PHOTO_PLACEHOLDER_CAPTIONS.length]}</span>
                   {i === 0 && (
                     <span className="absolute left-2 top-2 inline-flex h-[22px] items-center rounded-full bg-brand px-2 text-2xs font-semibold text-brand-on">
                       {t("photoCoverBadge")}
@@ -255,11 +232,11 @@ export function SalonSetupContent() {
                   </button>
                 </div>
               ))}
-              {photoCount < 10 && (
+              {photoCount < MAX_SALON_PHOTOS && (
                 <button
                   type="button"
                   aria-label={t("photoAddAria")}
-                  onClick={() => setPhotoCount((c) => Math.min(10, c + 1))}
+                  onClick={() => setPhotoCount((c) => Math.min(MAX_SALON_PHOTOS, c + 1))}
                   className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-image border border-dashed border-indigo-200 bg-card p-2.5 text-center text-brand"
                 >
                   <Icon icon={ImagePlus} size={22} />
@@ -323,18 +300,19 @@ export function SalonSetupContent() {
                 <label className="flex min-w-0 flex-col gap-1.5">
                   <span className="text-sm font-medium text-text-primary">{t("servicePriceLabel")}</span>
                   <Input value={svcPrice} onChange={(e) => setSvcPrice(e.target.value)} placeholder={t("servicePricePlaceholder")} inputMode="decimal" />
+                  {hasText(svcPrice) && !isValidPriceInput(svcPrice) && <span className="text-xs text-danger-fg">{t("invalidPriceHint")}</span>}
                 </label>
                 <label className="flex min-w-0 flex-col gap-1.5">
                   <span className="text-xs text-text-secondary">{t("serviceDurationLabel")}</span>
                   <Select value={svcDuration} onChange={(e) => setSvcDuration(Number(e.target.value))}>
-                    {DURATIONS.map((d) => (
+                    {SERVICE_DURATION_OPTIONS_MINUTES.map((d) => (
                       <option key={d} value={d}>
                         {t("durationMinutes", { min: d })}
                       </option>
                     ))}
                   </Select>
                 </label>
-                <Button type="button" variant="primary" size="md" onClick={addService} disabled={!svcName.trim()}>
+                <Button type="button" variant="primary" size="md" onClick={addService} disabled={!isServiceDraftValid({ name: svcName, price: svcPrice })}>
                   {t("addService")}
                 </Button>
               </div>
@@ -409,6 +387,7 @@ export function SalonSetupContent() {
                 <label className="flex min-w-0 flex-col gap-1.5">
                   <span className="text-sm font-medium text-text-primary">{t("staffEmailLabel")}</span>
                   <Input value={stEmail} onChange={(e) => setStEmail(e.target.value)} placeholder={t("staffEmailPlaceholder")} type="email" />
+                  {hasText(stEmail) && !isValidEmail(stEmail) && <span className="text-xs text-danger-fg">{t("invalidEmailHint")}</span>}
                 </label>
               </div>
               <label className="flex cursor-pointer items-start gap-2.5">
@@ -418,7 +397,7 @@ export function SalonSetupContent() {
                   <span className="text-xs leading-relaxed text-text-secondary">{t("staffSendNowDescription")}</span>
                 </span>
               </label>
-              <Button type="button" variant="primary" size="md" className="self-start" onClick={addStaff} disabled={!stName.trim()}>
+              <Button type="button" variant="primary" size="md" className="self-start" onClick={addStaff} disabled={!isStaffDraftValid({ name: stName, email: stEmail })}>
                 <Icon icon={UserPlus} size={16} />
                 {t("addStaff")}
               </Button>
@@ -442,7 +421,7 @@ export function SalonSetupContent() {
                   {d.open ? (
                     <span className="flex min-w-0 flex-wrap items-center gap-2">
                       <Select value={d.from} onChange={(e) => setDay(i, { from: e.target.value })} className="w-[104px]">
-                        {TIMES.map((tm) => (
+                        {WORKING_TIME_OPTIONS.map((tm) => (
                           <option key={tm} value={tm}>
                             {tm}
                           </option>
@@ -450,7 +429,7 @@ export function SalonSetupContent() {
                       </Select>
                       <span className="text-sm text-text-muted">{t("hoursToLabel")}</span>
                       <Select value={d.to} onChange={(e) => setDay(i, { to: e.target.value })} className="w-[104px]">
-                        {TIMES.map((tm) => (
+                        {WORKING_TIME_OPTIONS.map((tm) => (
                           <option key={tm} value={tm}>
                             {tm}
                           </option>

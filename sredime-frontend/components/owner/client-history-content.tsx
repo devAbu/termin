@@ -6,10 +6,8 @@ import {
   Banknote,
   BarChart3,
   CalendarDays,
-  Check,
   ChevronLeft,
   CircleCheck,
-  CircleX,
   Clock,
   Inbox,
   Lock,
@@ -32,40 +30,26 @@ import { Icon } from "@/components/ui/icon";
 import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatMonthShort, getEffectivePrice, initialsFromName } from "@/lib/format";
+import { formatDateShort, formatPrice, formatTimeOfDay, initialsFromName } from "@/lib/format";
 import { BOOKING_STATUS_TONE } from "@/lib/booking-status";
+import { hasText } from "@/lib/validation";
 import { SESSION_NAMES } from "@/lib/session";
-import type { BookingDetails, SalonClientSummary } from "@/lib/api/bookings";
+import { summarizeClients, type BookingDetails } from "@/lib/api/bookings";
+import {
+  NO_SHOW_THRESHOLD,
+  filterHistory,
+  sortNewestFirst,
+  summarizeClientHistory,
+  type HistoryFilter,
+} from "@/lib/api/client-history";
+import { bookingAmount, completedRevenue } from "@/lib/api/booking-metrics";
+import { BOOKING_STATUS_ICON } from "@/components/owner/booking-status-icon";
 import { NewAppointmentModal, type NewBookingInput } from "@/components/owner/new-appointment-modal";
-import type { ClientNote, Salon, Service, Worker, BookingStatus } from "@/types/entities";
+import type { ClientNote, Salon, Service, Worker } from "@/types/entities";
 import type { Role } from "@/types/dashboard";
 import type { VariantProps } from "class-variance-authority";
 
-/** Spec default (docs/specifikacija.md §3.2) — configurable per salon in a real backend, fixed here like dashboard's 30-day no-show KPI. */
-const NO_SHOW_THRESHOLD = 3;
-const NO_SHOW_WINDOW_DAYS = 90;
-
 type BadgeTone = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
-type HistoryFilter = "all" | "completed" | "cancelled" | "no_show";
-
-const STATUS_ICON = {
-  pending: Clock,
-  confirmed: CircleCheck,
-  completed: Check,
-  cancelled_by_client: CircleX,
-  cancelled_by_salon: CircleX,
-  no_show: UserX,
-};
-
-function timeOf(iso: string) {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-function dateLabel(iso: string) {
-  const d = new Date(iso);
-  return `${d.getDate()}. ${formatMonthShort(d)} ${d.getFullYear()}.`;
-}
 
 let nextLocalId = 200000;
 let nextLocalNoteId = 900000;
@@ -128,36 +112,14 @@ export function ClientHistoryContent({
 
   const isOwner = role === "owner";
 
-  const allBookings = useMemo(
-    () => [...bookings, ...extra].sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()),
-    [bookings, extra],
-  );
+  const allBookings = useMemo(() => sortNewestFirst([...bookings, ...extra]), [bookings, extra]);
+  const summary = useMemo(() => summarizeClientHistory(allBookings, now), [allBookings, now]);
+  const { completedCount, totalRevenue, lastCompletedAt, firstBookingAt, noShowsInWindow, thresholdReached } = summary;
 
-  const completed = allBookings.filter((b) => b.status === "completed");
-  const totalRevenue = completed.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
-  const lastCompleted = completed[0]; // allBookings already sorted newest-first
-  const firstBookingAt = allBookings.length ? allBookings[allBookings.length - 1].scheduledAt : null;
-
-  const noShow90 = useMemo(() => {
-    const cutoff = now.getTime() - NO_SHOW_WINDOW_DAYS * 86_400_000;
-    return allBookings.filter((b) => b.status === "no_show" && new Date(b.scheduledAt).getTime() >= cutoff).length;
-  }, [allBookings, now]);
-
-  const noShowAllTime = allBookings.filter((b) => b.status === "no_show").length;
-
-  const FILTER_STATUSES: Record<HistoryFilter, BookingStatus[] | null> = {
-    all: null,
-    completed: ["completed"],
-    cancelled: ["cancelled_by_client", "cancelled_by_salon"],
-    no_show: ["no_show"],
-  };
-  const filteredList = FILTER_STATUSES[filter] ? allBookings.filter((b) => FILTER_STATUSES[filter]!.includes(b.status)) : allBookings;
-  const listRevenue = filteredList
-    .filter((b) => b.status === "completed")
-    .reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
+  const filteredList = filterHistory(allBookings, filter);
+  const listRevenue = completedRevenue(filteredList);
 
   const canBlock = isOwner;
-  const thresholdReached = noShow90 >= NO_SHOW_THRESHOLD;
 
   const statusBadge = blocked
     ? { label: tc("statusBlocked"), icon: Ban, tone: "danger" as BadgeTone }
@@ -179,7 +141,7 @@ export function ClientHistoryContent({
   const visibleNav = NAV.filter((n) => isOwner || !n.ownerOnly);
 
   function addNote() {
-    if (!draft.trim()) return;
+    if (!hasText(draft)) return;
     const note: ClientNote = {
       id: nextLocalNoteId++,
       salonId: salon.id,
@@ -214,9 +176,7 @@ export function ClientHistoryContent({
     flash(tc("unblockedToast"));
   }
 
-  const clientSummary: SalonClientSummary[] = [
-    { name: clientName, phone: clientPhone, visits: allBookings.length, lastVisitAt: allBookings[0]?.scheduledAt ?? "", noShowCount: noShowAllTime },
-  ];
+  const clientSummary = summarizeClients(allBookings);
 
   function handleNewBooking(input: NewBookingInput) {
     const iso = new Date(input.date);
@@ -361,7 +321,7 @@ export function ClientHistoryContent({
                 {firstBookingAt && (
                   <span className="inline-flex items-center gap-1.5 text-sm text-text-secondary">
                     <Icon icon={CalendarDays} size={14} className="text-icon-muted" />
-                    {tc("firstBookingLabel", { date: dateLabel(firstBookingAt) })}
+                    {tc("firstBookingLabel", { date: formatDateShort(firstBookingAt) })}
                   </span>
                 )}
               </div>
@@ -387,9 +347,9 @@ export function ClientHistoryContent({
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
-              { label: tc("statTotalLabel"), value: String(allBookings.length), icon: CalendarDays, tone: "brand", hint: tc("statTotalHint", { salon: salon.name, date: firstBookingAt ? dateLabel(firstBookingAt) : "—" }) },
-              { label: tc("statCompletedLabel"), value: String(completed.length), icon: CircleCheck, tone: "success", hint: lastCompleted ? tc("statCompletedHint", { date: dateLabel(lastCompleted.scheduledAt) }) : tc("statCompletedHintNone") },
-              { label: tc("statNoShowLabel"), value: `${noShow90} / ${NO_SHOW_THRESHOLD}`, icon: UserX, tone: "danger", hint: tc("statNoShowHint", { threshold: NO_SHOW_THRESHOLD }) },
+              { label: tc("statTotalLabel"), value: String(allBookings.length), icon: CalendarDays, tone: "brand", hint: tc("statTotalHint", { salon: salon.name, date: firstBookingAt ? formatDateShort(firstBookingAt) : "—" }) },
+              { label: tc("statCompletedLabel"), value: String(completedCount), icon: CircleCheck, tone: "success", hint: lastCompletedAt ? tc("statCompletedHint", { date: formatDateShort(lastCompletedAt) }) : tc("statCompletedHintNone") },
+              { label: tc("statNoShowLabel"), value: `${noShowsInWindow} / ${NO_SHOW_THRESHOLD}`, icon: UserX, tone: "danger", hint: tc("statNoShowHint", { threshold: NO_SHOW_THRESHOLD }) },
               { label: tc("statRevenueLabel"), value: formatPrice(totalRevenue), icon: Banknote, tone: "brand", hint: tc("statRevenueHint") },
             ].map((s) => (
               <div key={s.label} className="flex flex-col gap-2 rounded-card bg-card p-4 shadow-card">
@@ -406,7 +366,7 @@ export function ClientHistoryContent({
                   </span>
                   <span className="eyebrow">{s.label}</span>
                 </span>
-                <span className={cn("text-2xl font-bold tracking-tight", s.tone === "danger" && noShow90 > 0 ? "text-danger-fg" : "text-text-primary")}>{s.value}</span>
+                <span className={cn("text-2xl font-bold tracking-tight", s.tone === "danger" && noShowsInWindow > 0 ? "text-danger-fg" : "text-text-primary")}>{s.value}</span>
                 <span className="text-xs leading-relaxed text-text-muted">{s.hint}</span>
               </div>
             ))}
@@ -450,15 +410,15 @@ export function ClientHistoryContent({
                 <div className="p-8 text-center text-sm text-text-secondary">{tc("emptyHistory")}</div>
               ) : (
                 filteredList.map((b) => {
-                  const StatusIcon = STATUS_ICON[b.status];
+                  const StatusIcon = BOOKING_STATUS_ICON[b.status];
                   return (
                     <div
                       key={b.id}
                       className="grid grid-cols-1 gap-2 border-b border-border-subtle p-4 last:border-b-0 sm:grid-cols-[90px_minmax(0,1fr)_auto] sm:items-center sm:gap-3 lg:grid-cols-[110px_minmax(0,1fr)_auto_80px] lg:p-4 lg:px-6"
                     >
                       <span className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold text-text-primary">{dateLabel(b.scheduledAt)}</span>
-                        <span className="text-xs text-text-muted">{timeOf(b.scheduledAt)}</span>
+                        <span className="text-sm font-semibold text-text-primary">{formatDateShort(b.scheduledAt)}</span>
+                        <span className="text-xs text-text-muted">{formatTimeOfDay(b.scheduledAt)}</span>
                       </span>
                       <span className="flex min-w-0 flex-col gap-0.5">
                         <span className="font-medium text-text-primary">{b.service.name}</span>
@@ -469,7 +429,7 @@ export function ClientHistoryContent({
                         {tStatus(b.status)}
                       </Badge>
                       <span className={cn("text-sm font-semibold sm:text-right", b.status === "completed" ? "text-text-primary" : "text-text-muted")}>
-                        {b.status === "completed" ? formatPrice(getEffectivePrice(b.service.price, b.service.discountPercent)) : "—"}
+                        {b.status === "completed" ? formatPrice(bookingAmount(b)) : "—"}
                       </span>
                     </div>
                   );
@@ -499,7 +459,7 @@ export function ClientHistoryContent({
                     <div key={n.id} className="flex flex-col gap-2 rounded-control bg-surface-sunken p-3.5">
                       <span className="text-sm leading-relaxed text-text-primary">{n.text}</span>
                       <span className="flex flex-wrap items-center gap-2.5">
-                        <span className="text-xs text-text-muted">{tc("notesMeta", { author: n.authorName, date: dateLabel(n.createdAt) })}</span>
+                        <span className="text-xs text-text-muted">{tc("notesMeta", { author: n.authorName, date: formatDateShort(n.createdAt) })}</span>
                         <div className="flex-1" />
                         <button type="button" onClick={() => removeNote(n.id)} className="text-xs font-medium text-danger-fg">
                           {tc("notesRemove")}
@@ -519,7 +479,7 @@ export function ClientHistoryContent({
                     className="w-full resize-y rounded-control border border-border-subtle bg-card p-3 text-base leading-relaxed text-text-primary placeholder:text-text-muted focus-visible:border-border-brand focus-visible:shadow-focus focus-visible:outline-none"
                   />
                 </label>
-                <Button type="button" variant="primary" size="md" className="self-start" disabled={!draft.trim()} onClick={addNote}>
+                <Button type="button" variant="primary" size="md" className="self-start" disabled={!hasText(draft)} onClick={addNote}>
                   <Icon icon={Plus} size={16} />
                   {tc("notesSave")}
                 </Button>
@@ -532,7 +492,7 @@ export function ClientHistoryContent({
                     <span className="text-base font-bold text-danger-fg">{tc("blockedPanelTitle")}</span>
                   </span>
                   <span className="text-sm leading-relaxed text-text-secondary">
-                    {tc("blockedPanelBody", { salon: salon.name, author: isOwner ? SESSION_NAMES.owner : SESSION_NAMES.worker, date: dateLabel(now.toISOString()) })}
+                    {tc("blockedPanelBody", { salon: salon.name, author: isOwner ? SESSION_NAMES.owner : SESSION_NAMES.worker, date: formatDateShort(now.toISOString()) })}
                   </span>
                   <Button type="button" variant="secondary" size="md" className="self-start" onClick={unblock}>
                     {tc("unblockCta")}

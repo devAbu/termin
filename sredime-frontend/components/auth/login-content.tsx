@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Icon } from "@/components/ui/icon";
 import { Toast } from "@/components/ui/toast";
 import { SESSION_NAMES, setStoredSession, type SessionRole } from "@/lib/session";
+import { validateLogin } from "@/lib/validation";
 
 export function LoginContent() {
   const t = useTranslations("login");
@@ -37,8 +38,9 @@ export function LoginContent() {
   }
 
   function handleLogin() {
-    if (!ident.trim() || !password.trim()) {
-      flash(t("missingFieldsToast"));
+    const error = validateLogin({ identifier: ident, password });
+    if (error) {
+      flash(t(error === "missingFields" ? "missingFieldsToast" : "invalidContactToast"));
       return;
     }
     setStoredSession({ role: "client", name: SESSION_NAMES.client });

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
 import { Toast } from "@/components/ui/toast";
 import { formatMonthGenitive, initialsFromName } from "@/lib/format";
+import { validatePasswordChange, validateProfile } from "@/lib/validation";
 import type { User } from "@/types/entities";
 
 export function ClientProfileContent({ user }: { user: User }) {
@@ -37,6 +38,11 @@ export function ClientProfileContent({ user }: { user: User }) {
   }
 
   function saveProfile() {
+    const error = validateProfile({ name, email, phone });
+    if (error) {
+      flash(t(error === "nameRequired" ? "nameRequiredToast" : error === "invalidEmail" ? "invalidEmailToast" : "invalidPhoneToast"));
+      return;
+    }
     flash(t("savedToast"));
   }
 
@@ -48,16 +54,17 @@ export function ClientProfileContent({ user }: { user: User }) {
   }
 
   function changePassword() {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      flash(t("passwordMismatchToast"));
-      return;
-    }
-    if (newPassword.length < 8) {
-      flash(t("passwordTooShortToast"));
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      flash(t("passwordMismatchToast"));
+    const error = validatePasswordChange({ currentPassword, newPassword, confirmPassword });
+    if (error) {
+      flash(
+        t(
+          error === "missingFields"
+            ? "missingFieldsToast"
+            : error === "passwordTooShort"
+              ? "passwordTooShortToast"
+              : "passwordMismatchToast",
+        ),
+      );
       return;
     }
     setCurrentPassword("");

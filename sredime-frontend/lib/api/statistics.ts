@@ -1,7 +1,9 @@
 import type { Salon, Worker } from "@/types/entities";
 import type { BookingDetails } from "@/lib/api/bookings";
 import { hoursForDate } from "@/lib/api/availability";
-import { formatWeekdayShort, getEffectivePrice } from "@/lib/format";
+import { addDays, startOfDay } from "@/lib/date";
+import { bookingAmount, completedRevenue, countNoShows } from "@/lib/api/booking-metrics";
+import { formatWeekdayShort } from "@/lib/format";
 
 export type StatsPeriod = "today" | "week" | "month" | "custom";
 
@@ -18,18 +20,6 @@ export interface StatsBar {
 
 /** Bookings that occupy a calendar slot — everything except the two cancelled statuses (matches the dashboard's day-fullness rule). */
 const OCCUPYING_STATUSES = new Set(["pending", "confirmed", "completed", "no_show"]);
-
-function startOfDay(d: Date): Date {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
-function addDays(d: Date, days: number): Date {
-  const copy = new Date(d);
-  copy.setDate(copy.getDate() + days);
-  return copy;
-}
 
 function inRange(iso: string, start: Date, end: Date): boolean {
   const t = new Date(iso).getTime();
@@ -75,7 +65,7 @@ function bucketBar(label: string, bookings: BookingDetails[], start: Date, end: 
   const completed = bookings.filter((b) => b.status === "completed" && inRange(b.scheduledAt, start, end));
   return {
     label,
-    revenue: completed.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0),
+    revenue: completedRevenue(completed),
     completedCount: completed.length,
   };
 }
@@ -146,7 +136,7 @@ export function topServicesByCount(bookings: BookingDetails[], limit = 5): Servi
     if (b.status !== "completed") continue;
     const cur = byName.get(b.service.name) ?? { name: b.service.name, count: 0, revenue: 0 };
     cur.count += 1;
-    cur.revenue += getEffectivePrice(b.service.price, b.service.discountPercent);
+    cur.revenue += bookingAmount(b);
     byName.set(b.service.name, cur);
   }
   return Array.from(byName.values())
@@ -163,7 +153,7 @@ export interface RateStat {
 export function rateBreakdown(bookings: BookingDetails[]): { cancelled: RateStat; noShow: RateStat } {
   const total = bookings.length;
   const cancelledCount = bookings.filter((b) => b.status === "cancelled_by_client" || b.status === "cancelled_by_salon").length;
-  const noShowCount = bookings.filter((b) => b.status === "no_show").length;
+  const noShowCount = countNoShows(bookings);
   const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 1000) / 10);
   return {
     cancelled: { count: cancelledCount, total, pct: pct(cancelledCount) },
@@ -187,7 +177,7 @@ export function staffStatsRows(bookings: BookingDetails[], workers: Worker[], sa
   return workers.map((w) => {
     const forWorker = bookings.filter((b) => b.worker.id === w.id);
     const completed = forWorker.filter((b) => b.status === "completed");
-    const revenue = completed.reduce((sum, b) => sum + getEffectivePrice(b.service.price, b.service.discountPercent), 0);
+    const revenue = completedRevenue(completed);
     const busy = busyMinutes(forWorker);
     return {
       workerId: w.id,

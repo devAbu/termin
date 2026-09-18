@@ -186,7 +186,10 @@
     "doneSub": "Salon potvrđuje termin. Obavještenje dobijaš na email.",
     "myBookings": "Moji termini",
     "bookAnother": "Zakaži još jedan termin",
-    "barLinePickTime": "Odaberi vrijeme"
+    "barLinePickTime": "Odaberi vrijeme",
+    "invalidPhoneHint": "Unesi ispravan broj mobitela.",
+    "invalidEmailHint": "Unesi ispravnu email adresu.",
+    "invalidNameHint": "Unesi ime i prezime."
   },
   "myBookings": {
     "title": "Moji termini",
@@ -281,7 +284,11 @@
     "notifReminderLabel": "Podsjetnik na email",
     "notifReminderHint": "Dan prije termina i dva sata prije.",
     "notifChangesLabel": "Obavještenja o promjenama",
-    "notifChangesHint": "Kad salon pomjeri ili otkaže termin."
+    "notifChangesHint": "Kad salon pomjeri ili otkaže termin.",
+    "missingFieldsToast": "Popuni sva tri polja za lozinku.",
+    "nameRequiredToast": "Unesi ime i prezime.",
+    "invalidEmailToast": "Unesi ispravnu email adresu.",
+    "invalidPhoneToast": "Unesi ispravan broj mobitela."
   },
   "dashboard": {
     "navCalendar": "Kalendar",
@@ -396,7 +403,9 @@
     "statsRevenueLabel": "Prihod",
     "statsPerStaffTitle": "Po radniku",
     "statsHint": "Samo obavljeni termini u prihodu.",
-    "statsFullReportCta": "Puni izvještaj →"
+    "statsFullReportCta": "Puni izvještaj →",
+    "invalidPhoneHint": "Unesi ispravan broj mobitela.",
+    "invalidNameHint": "Unesi ime i prezime."
   },
   "workerInvite": {
     "infoBanner": "Radnik se ne može registrovati sam. Nalog dobija isključivo preko pozivnice koju mu ti pošalješ iz ovog ekrana.",
@@ -470,7 +479,9 @@
     "requestNewCta": "Zatraži novu pozivnicu",
     "requestNewToast": "Zahtjev je poslan vlasnici salona.",
     "notFoundTitle": "Pozivnica ne postoji",
-    "notFoundBody": "Link nije ispravan ili je salon u međuvremenu uklonjen. Provjeri link koji si dobio/la ili zatraži novi."
+    "notFoundBody": "Link nije ispravan ili je salon u međuvremenu uklonjen. Provjeri link koji si dobio/la ili zatraži novi.",
+    "missingFieldsToast": "Unesi lozinku i potvrdu lozinke.",
+    "invalidContactHint": "Unesi ispravan email ili broj mobitela."
   },
   "clientHistory": {
     "viewHistory": "Historija",
@@ -623,7 +634,9 @@
     "backCta": "Nazad",
     "skipCta": "Preskoči za sada",
     "continueCta": "Nastavi",
-    "submitCta": "Pošalji na verifikaciju"
+    "submitCta": "Pošalji na verifikaciju",
+    "invalidPriceHint": "Unesi cijenu veću od 0.",
+    "invalidEmailHint": "Unesi ispravnu email adresu."
   },
   "statsPage": {
     "title": "Statistika",
@@ -777,7 +790,8 @@
     "legalPrivacy": "Privatnost",
     "legalSupport": "Podrška",
     "showPasswordAria": "Prikaži lozinku",
-    "hidePasswordAria": "Sakrij lozinku"
+    "hidePasswordAria": "Sakrij lozinku",
+    "invalidContactToast": "Unesi ispravan email ili broj mobitela."
   },
   "registration": {
     "roleClient": "Klijent",
@@ -856,7 +870,9 @@
     "contactSupportLink": "Kontaktiraj podršku",
     "legalTerms": "Uslovi korištenja",
     "legalPrivacy": "Privatnost",
-    "legalSupport": "Podrška"
+    "legalSupport": "Podrška",
+    "invalidContactToast": "Unesi ispravan email ili broj mobitela.",
+    "invalidPhoneToast": "Unesi ispravan broj mobitela salona."
   },
   "footer": {
     "tagline": "Zakazivanje termina u salonima ličnih usluga u Bosni i Hercegovini.",

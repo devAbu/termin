@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 import { firstName, formatPrice, formatDayLabel, formatWeekdayShort, getEffectivePrice, initialsFromName } from "@/lib/format";
+import { hasText, isGuestBookingDetailsValid, isValidEmail, isValidGuestName, isValidPhone } from "@/lib/validation";
 import { computeSlots, countFreeSlots } from "@/lib/api/availability";
 import { CURRENT_CLIENT_ID, type BookingDetails } from "@/lib/api/bookings";
 import { pickFavoriteWorkerId, pickLastUsedWorkerId } from "@/lib/api/favorites";
@@ -187,7 +188,7 @@ export function BookingWizard({
   const stepIndexes = solo ? [0, 2, 3] : [0, 1, 2, 3];
   const currentLabelIndex = done ? labels.length : stepIndexes.indexOf(step);
 
-  const canNext = step === 0 ? !!serviceId : step === 1 ? !!workerChoice : step === 2 ? !!selectedTime : !!(clientName.trim() && clientPhone.trim() && clientEmail.trim());
+  const canNext = step === 0 ? !!serviceId : step === 1 ? !!workerChoice : step === 2 ? !!selectedTime : isGuestBookingDetailsValid({ name: clientName, phone: clientPhone, email: clientEmail });
 
   function handleNext() {
     if (!canNext) return;
@@ -610,14 +611,17 @@ export function BookingWizard({
                         <label className="flex flex-col gap-1.5">
                           <span className="text-sm font-medium text-text-primary">{t("clientNameLabel")}</span>
                           <Input value={clientName} onChange={(e) => setClientName(e.target.value)} />
+                          {hasText(clientName) && !isValidGuestName(clientName) && <span className="text-xs text-danger-fg">{t("invalidNameHint")}</span>}
                         </label>
                         <label className="flex flex-col gap-1.5">
                           <span className="text-sm font-medium text-text-primary">{t("clientPhoneLabel")}</span>
                           <Input value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} type="tel" />
+                          {hasText(clientPhone) && !isValidPhone(clientPhone) && <span className="text-xs text-danger-fg">{t("invalidPhoneHint")}</span>}
                         </label>
                         <label className="flex flex-col gap-1.5">
                           <span className="text-sm font-medium text-text-primary">{t("clientEmailLabel")}</span>
                           <Input value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} type="email" />
+                          {hasText(clientEmail) && !isValidEmail(clientEmail) && <span className="text-xs text-danger-fg">{t("invalidEmailHint")}</span>}
                         </label>
                       </div>
                       <label className="flex flex-col gap-1.5">

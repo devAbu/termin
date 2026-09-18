@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Icon } from "@/components/ui/icon";
 import { ModalOverlay } from "@/components/ui/modal-overlay";
+import { hasText, isValidContact, isWorkerInviteValid } from "@/lib/validation";
 
 export const WORKER_ROLES = ["Frizer / frizerka", "Barber", "Kozmetičar / kozmetičarka", "Manikir / pedikir", "Pomoćno osoblje"];
 
@@ -104,6 +105,7 @@ export function InviteWorkerModal({
               <span className="eyebrow">{t("contactLabel")}</span>
               <Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder={t("contactPlaceholder")} size="lg" />
               <span className="text-xs text-text-muted">{t("contactHint")}</span>
+              {hasText(contact) && !isValidContact(contact) && <span className="text-xs text-danger-fg">{t("invalidContactHint")}</span>}
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="eyebrow">{t("roleLabel")}</span>
@@ -158,7 +160,7 @@ export function InviteWorkerModal({
               <Button type="button" variant="secondary" size="lg" className="flex-1" onClick={onClose}>
                 {t("cancel")}
               </Button>
-              <Button type="button" variant="primary" size="lg" className="flex-[1.5]" disabled={!name.trim() || !contact.trim()} onClick={handleSend}>
+              <Button type="button" variant="primary" size="lg" className="flex-[1.5]" disabled={!isWorkerInviteValid({ name, contact })} onClick={handleSend}>
                 {t("send")}
                 <Icon icon={Send} size={16} />
               </Button>

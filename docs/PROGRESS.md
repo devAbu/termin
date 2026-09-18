@@ -1125,33 +1125,155 @@ browseru (dashboard Zahtjevi/Klijenti/Radnici tabovi, booking wizard, login quic
 navbar) — bez konzolnih/server grešaka, ekrani vizuelno identični (osim namjerne unifikacije boje
 statusa).
 
-### 16.2 Faza 2 — rastavljanje "god-komponenti" + izvlačenje poslovne logike u `lib/` — [ ] POSEBNA RUNDA, POSLIJE FAZE 1
+### 16.2 Faza 2 — rastavljanje "god-komponenti" + izvlačenje poslovne logike u `lib/` — [ ] POSLIJE FAZE 1 (Faza 1 gotova, push-ovana 2026-09-18, commit `2f8cbe9`)
 
 Ovo je stvarna popravka za punu "mobile-ready" separaciju iz `docs/frontend.md`/`docs/mobile.md`, ali
 značajno veći i rizičniji zahvat od Faze 1 (rastavljanje velikih komponenti, izvlačenje ~10-ak čistih
 funkcija u `lib/`, dosta re-testiranja) — namjerno odvojeno da ne uđe u kod prije nego je dogovoreno.
 
-- [ ] `components/owner/dashboard-content.tsx` (872 linije) — jedna `DashboardContent` komponenta
+**NAČIN RADA (dogovoreno sa korisnikom 2026-09-18):** STVAR PO STVAR, da korisnik može ispratiti šta se
+tačno mijenja. Pravila:
+1. Radi se JEDNA pod-stavka odjednom, nikad dvije paralelno. Prije početka pod-stavke kratko reći šta
+   će se dirati.
+2. Na kraju svake pod-stavke: `npx tsc --noEmit` čist, `npx eslint .` bez NOVIH grešaka (6 pre-existing
+   ostaju, vidi §16.1), uživo provjera dirnutog ekrana u browseru (desktop+mobile), potvrda da se
+   ponašanje NIJE promijenilo. Čist refaktor — bez novih feature-a i bez vizuelnih promjena.
+3. Nakon svake pod-stavke: ažurirati ovaj fajl (`[ ]` → `[x]` + kratke napomene šta je izvučeno gdje),
+   pa STATI i sačekati korisnikovo "sljedeća" prije prelaska na iduću stavku. Git add/commit/push samo
+   na korisnikov eksplicitan zahtjev (predlog: jedan commit po pod-stavci radi lakšeg vraćanja).
+4. Ako se usput nađe nešto van obima (bug, dodatni duplikat) — ne popravljati tiho, nego upisati ovdje
+   i pitati.
+
+**PREDLOŽENI REDOSLIJED** (od najmanjeg rizika ka najvećem — korisnik može promijeniti):
+1. [x] Validacija formi → novi `lib/validation.ts` — GOTOVO (obim proširen na SVE forme, ne samo login +
+   registraciju, po korisnikovom zahtjevu; vidi detalj u bullet-u "Forma-validacija" ispod)
+2. [x] `salon-setup-content.tsx` — konstante u `lib/constants/` — GOTOVO (vidi bullet ispod)
+3. [x] `client-history-content.tsx` — agregacije u `lib/` — GOTOVO (vidi bullet ispod)
+4. `booking-wizard.tsx` — pod-komponenta po koraku + date helperi u `lib/`
+5. `dashboard-content.tsx` — najveća, 7 tabova, radi se zadnja kad je obrazac već uhodan
+
+(Redoslijed lista ispod je originalni iz audita, ne redoslijed izvršenja. Trenutne veličine nakon
+Faze 1: dashboard 868, booking-wizard 708, client-history 603, salon-setup 593 linija.)
+
+- [ ] `components/owner/dashboard-content.tsx` (868 linija) — jedna `DashboardContent` komponenta
       renderuje svih 7 tabova (kalendar/zahtjevi/klijenti/usluge/radnici/vrijeme/statistika) kroz
-      `page === "..."` grane u istoj funkciji ("god component"). Lokalni helperi (`initialsOf`,
-      `contactFor`, `startOfDay`, `timeOf`, `endTimeOf`) i inline agregacije (no-show brojevi,
+      `page === "..."` grane u istoj funkciji ("god component"). Lokalni helperi (`contactFor`,
+      `startOfDay`, `timeOf`, `endTimeOf`; `initialsOf` već uklonjen u Fazi 1) i inline agregacije (no-show brojevi,
       booked-minutes, prihod, per-radnik tally na linijama 203-216, 728-749) trebaju u `lib/`. Plan:
       rastaviti po tabu u pod-komponente, izvući date helpere i agregacije u `lib/api/bookings.ts`
       ili novi `lib/dashboard-stats.ts`.
 - [ ] `components/booking/booking-wizard.tsx` (707 linija) — jedna komponenta za cijeli booking flow
       (usluga→radnik→termin→potvrda); lokalni `startOfDay`/`isSameDay`/`freeWord` helperi umjesto u
       `lib/`. Plan: pod-komponenta po koraku, date helperi u `lib/format.ts`/`lib/api/availability.ts`.
-- [ ] `components/owner/client-history-content.tsx` (623 linije) — lokalni `STATUS_ICON`/`timeOf`/
-      `dateLabel`/`initialsOf` + inline prihod/no-show agregacije (linije 152,158,161,172) —
-      duplicira posao koji `lib/api/statistics.ts` dijelom već radi. Plan: izvući agregacije tamo.
-- [ ] `components/owner/salon-setup-content.tsx` (607 linija) — domain podaci (`DURATIONS`, `TIMES`,
-      `DAYS_BS`, `PHOTO_CAPTIONS`) hardkodirani kao lokalne konstante umjesto `lib/constants/`; nema
-      validacije uopšte (samo `disabled={!x.trim()}` UI-gating). Plan: konstante u `lib/constants/`.
-- [ ] Forma-validacija u `components/auth/login-content.tsx` (inline `if` u handleru) i
-      `components/auth/registration-content.tsx` (lokalne ne-eksportovane funkcije poput
-      `requireAccountFields()`, vezane za component state/toast) — nigdje u čistim, mobile-reusable
-      `lib/` funkcijama. Plan: novi `lib/validation.ts` sa čistim funkcijama (bez DOM/React zavisnosti,
-      vraćaju npr. listu grešaka), komponente ih pozivaju i prikazuju rezultat.
+- [x] `components/owner/client-history-content.tsx` (603 → 565 linija) — GOTOVO (2026-09-18).
+      **Novi `lib/api/booking-metrics.ts`** (list-modul bez zavisnosti od `bookings.ts` runtime-a, da
+      `bookings.ts` i `statistics.ts` oba mogu da ga koriste bez kružne/obrnute zavisnosti): 3 primitive koje
+      su bile ispisane inline u 6 fajlova — `bookingAmount(b)` (šta klijent plaća: cijena minus popust),
+      `completedRevenue(bookings)` (prihod = samo obavljeni), `countNoShows(bookings, window?)` (sa opcionim
+      prozorom `{now, days}`). `statistics.ts` ih koristi umjesto 3 svoje kopije formule (`bucketBar`,
+      `topServicesByCount`, `staffStatsRows`) i `rateBreakdown` za nedolaske. Novi `lib/date.ts`
+      (`startOfDay`, `addDays`, lokalno vrijeme, ne UTC) — zamijenio privatne kopije u `statistics.ts`.
+      **Novi `lib/api/client-history.ts`**: `NO_SHOW_THRESHOLD` (3) / `NO_SHOW_WINDOW_DAYS` (90), tip
+      `HistoryFilter` + mapa filter→statusi (bila je nanovo kreirana na svakom renderu),
+      `sortNewestFirst`, `filterHistory`, `summarizeClientHistory(bookings, now)` → `{completedCount,
+      totalRevenue, lastCompletedAt, firstBookingAt, noShowsInWindow, thresholdReached}`.
+      **`lib/format.ts`**: `formatTimeOfDay(iso)` i `formatDateShort(iso)` (ex lokalni `timeOf`/`dateLabel`).
+      **Novi `components/owner/booking-status-icon.ts`** (`BOOKING_STATUS_ICON`, ex lokalni `STATUS_ICON`) —
+      namjerno uz komponente a ne u `lib/` jer sadrži React ikone (lib/ mora ostati React-free radi mobile).
+      Ručno građen `clientSummary` (isti oblik kao `summarizeClients`) zamijenjen pozivom
+      `summarizeClients(allBookings)`; uklonjeni nekorišteni `Check`/`CircleX` importi.
+      **Provjera:** `tsc` čist, `eslint` = isti 6 pre-existing; 18.543 poređenja stara-vs-nova logika na
+      nasumičnim podacima (stara logika prepisana iz `git show HEAD:`, a cijela stara `statistics.ts` učitana
+      iz HEAD-a i poređena sa novom za `buildRevenueBars`/`topServicesByCount`/`staffStatsRows`/
+      `rateBreakdown`), uklj. tačnu granicu prozora (booking na tačno -90d ulazi, -90d-1min ne ulazi);
+      uživo: Emina Pašić (prag 3/3, 56 KM, banner, filteri 4/1/0/3 termina, komentar, novi termin 4→5,
+      blokada), Sanela Kovačević u ulozi radnika ("Predloži blokadu", 91 KM), 404 za nepostojećeg klijenta,
+      i ekran Statistika (dirnut preko `statistics.ts`) bez grešaka.
+      **Dodatno čišćenje istog dana (korisnik odobrio, kopije van planiranih stavki):** `statistics-content.tsx`
+      (2× prihod → `completedRevenue`, uklonjen nekorišteni `getEffectivePrice` import),
+      `my-bookings-content.tsx` (2× cijena → `bookingAmount`), `lib/api/bookings.ts` `summarizeClients` i
+      `statistics.ts` `rateBreakdown` (ručno brojanje nedolazaka → `countNoShows`),
+      `new-appointment-modal.tsx` (lokalni `startOfDay` → `lib/date.ts`). Provjera: ukupno 26.216
+      poređenja stara-vs-nova logika (uklj. `summarizeClients` iz HEAD-a na miksu više klijenata, cijene,
+      prihod, `startOfDay`/`addDays` na 800 datuma + prelazi na ljetno/zimsko vrijeme); uživo: Statistika
+      (Sedmica/Mjesec/Danas/Raspon; sedmica identična ranijim brojevima 207 KM/+158,8%/6 termina),
+      Moji termini (cijene 35/35/56 KM i historija 56/25/30/15/35 KM identične ranijim), dashboard
+      "Klijenti" (Emina "Rizik nedolaska", Sanela "Redovan klijent"), modal novog termina (Danas/19.9./20.9.).
+      **Preostale kopije ISTIH formula — SVE su u fajlovima koje dobijaju sljedeće stavke:**
+      `dashboard-content.tsx` (stavka 5): `timeOf` (→ `formatTimeOfDay`), `startOfDay` (→ `lib/date.ts`),
+      `STATUS_ICON` (→ `BOOKING_STATUS_ICON`), prihod-reduce r.736 (→ `completedRevenue`), nedolasci sa
+      prozorom od 30 dana r.198 (→ `countNoShows(.., {now, days: 30})`), ukupni nedolasci r.730
+      (→ `countNoShows`), cijena u redu r.273 (→ `bookingAmount`); `booking-wizard.tsx` (stavka 4):
+      lokalni `startOfDay` (→ `lib/date.ts`).
+- [x] `components/owner/salon-setup-content.tsx` (607 → 572 linija) — GOTOVO (2026-09-18). Domain podaci
+      izvučeni iz komponente: novi `lib/constants/salon-setup.ts` (`SERVICE_DURATION_OPTIONS_MINUTES`,
+      `WORKING_TIME_OPTIONS`, `WEEKDAY_LABELS_MON_FIRST`, `PHOTO_PLACEHOLDER_CAPTIONS`; imena su
+      pojašnjena jer su sad globalni exporti, npr. `DURATIONS`/`DAYS_BS` bi bila nejasna), plus podaci
+      koji su bili "zakopani" kao magični brojevi/literali: `MAX_SALON_PHOTOS` (10, bio hardkodiran na 2
+      mjesta), `INITIAL_PHOTO_COUNT`, `DEFAULT_SERVICE_DURATION_MINUTES` (45), `DEFAULT_OPEN_TIME`/
+      `DEFAULT_CLOSE_TIME`/`DEFAULT_OPEN_WEEKDAYS_COUNT`, početni demo nacrti `INITIAL_DRAFT_SERVICES`/
+      `INITIAL_DRAFT_STAFF` i `createDefaultWeek()`. Novi `types/salon-setup.ts` (`DraftService`,
+      `DraftStaff`, `DayHours`, `StaffStatus` — UI nacrti, ne API entiteti, zato odvojeno od
+      `types/entities.ts`). Validacija (druga polovina originalnog opisa) je već riješena u stavci 1.
+      Namjerno ostavljeno u komponenti: `TOTAL_STEPS`/`Step` (strukturni dio UI-ja, vezan za 5 ekrana),
+      `SALON_NAME`/`SALON_CITY` (placeholder identitet, dokumentovan u §12) i jednolinijski state
+      handleri (`applyMondayToAll`, `setDay`) — izvlačenje bi dodalo indirekciju bez koristi.
+      **Provjera:** `tsc` čist, `eslint` = isti 6 pre-existing; 17 provjera da su premještene vrijednosti
+      IDENTIČNE onima iz zadnjeg commit-a (izvučene iz `git show HEAD:` teksta, uklj. početne nacrte i
+      default sedmicu); uživo kroz svih 5 koraka + "Pošalji na verifikaciju": 3/10 slika pa limit 10 i
+      nestanak dugmeta, ciklični natpisi, 3 demo usluge/radnika, trajanja 15–120 sa 45 kao default,
+      radno vrijeme Pon–Sub 09:00–19:00 / Ned zatvoreno sa 13 opcija vremena, pregled "6 radnih dana".
+      Mobile layout nije posebno provjeravan jer se markup nije mijenjao.
+      **Uočeno, van obima (nije mijenjano):** `stRole.trim() || "Radnik"` u `addStaff` upisuje hardkodiran
+      bosanski tekst u podatak (kršenje pravila "svi UI tekstovi kroz translation", docs/CLAUDE.md #6);
+      demo nacrti u `INITIAL_DRAFT_*` su takođe bosanski literali (prihvatljivo kao mock, ali ide u
+      `lib/mock-data` kad backend krene).
+- [x] Forma-validacija — GOTOVO (2026-09-18). Obim proširen sa login/registracije na SVE forme, i
+      dopunjen novim pravilima tamo gdje forma nije imala nikakvu validaciju (korisnikova odluka: sve
+      popraviti prije prelaska na sljedeću stavku).
+      Novi `lib/validation.ts`: čiste funkcije (bez React/DOM/i18n). `validate*` vraćaju `null` ili KOD
+      greške (komponenta ga mapira na prijevod), `is*` vraćaju boolean za forme sa onemogućenim
+      dugmetom. Forme sa "Pošalji" dugmetom prikazuju toast, forme sa onemogućenim dugmetom prikazuju
+      kratku poruku ispod polja tek kad je polje popunjeno a neispravno. 14+2 nova ključa u
+      `messages/bs.json` (invalid*Toast/Hint, missingFieldsToast, nameRequiredToast).
+      **Pravila:** email `x@y.zz`; mobitel 8–15 cifara, dozvoljeno `+`, razmaci, `-`, `()`, `/`, `.`
+      (prolazi "061 234 567" i "+387 61 234 567"); kontakt = email ILI mobitel; lozinka min 8 i NIKAD se
+      ne trimuje (razmaci mogu biti dio lozinke — ista pravila u registraciji, loginu, profilu i
+      pozivnici); gost ime ≥2 znaka; popust 1–90; cijena teksta > 0 i prihvata bosanski decimalni zarez
+      ("25,5" — `parsePriceInput`).
+      **Povezano po formi:** login (`validateLogin`, sad provjerava i format kontakta), registracija
+      klijent/vlasnik (`validateAccountFields` / `validateSalonBasics` — sad i format kontakta/mobitela
+      salona / `validateTermsAccepted`), profil "Sačuvaj" (`validateProfile` — ime obavezno, email
+      ispravan, mobitel opcion ali ispravan ako je unesen) + promjena lozinke (`validatePasswordChange`),
+      pozivnica radniku (`validateNewPassword`), modal usluge (`validateServiceEdit`; `min`/`max` na
+      inputu vezani za iste konstante), novi termin za gosta (`isGuestClientValid` + hintovi), modal
+      pozivnice (`isWorkerInviteValid`), booking wizard korak 4 (`isGuestBookingDetailsValid` + hintovi
+      za ime/mobitel/email), salon-setup (cijena usluge obavezna i > 0, email radnika opcion ali
+      ispravan), bilješka klijenta (`hasText`), recenzija (`isRatingSelected`). Pravilo za lozinku je
+      prije bilo kopirano u 3 fajla — sad jedno.
+      **Ispravljene nedosljednosti iz prve verzije:** prazna polja za lozinku (profil, pozivnica) sad
+      pokazuju "popuni polja" umjesto pogrešne poruke "lozinke se ne poklapaju"; lozinka od samih
+      razmaka se više ne tretira različito u registraciji i profilu.
+      Ostavljeno namjerno: `parseBsDate` za statistiku već je u `lib/api/statistics.ts`; preostali
+      `.trim()` u `review-form`/`invite-worker-modal`/`salon-setup-content` su normalizacija unosa.
+      **Provjera:** `tsc` čist; `eslint` = isti 6 pre-existing; 115 tvrdnji o pravilima (ispravni +
+      neispravni primjeri, granice 7/8 i 15/16 cifara, redoslijed grešaka) i provjera da SVIH 38
+      mobitela/emailova iz `lib/mock-data` zadovoljava nova pravila (da demo ne odbija vlastite podatke);
+      uživo u browseru: login, registracija klijent + vlasnik (korak 2), profil (ime/email/mobitel/lozinka),
+      pozivnica radniku, modal usluge, salon-setup (cijena sa zarezom, email radnika), booking wizard
+      korak 4, novi termin za gosta, modal pozivnice. Nije uživo klikano: recenzija i bilješka klijenta
+      (samo `hasText`/`isRatingSelected`, nepromijenjeno ponašanje).
+      **Napomena o testovima:** projekat nema test runner (nema vitest/jest), pa su provjere pravila
+      pokretane kao jednokratna skripta van repoa, NISU u repou. Preporuka: kad se uvede test runner,
+      prvi test-fajl treba biti `lib/validation.ts`.
+      **Uočeno, van obima (nije mijenjano):** salon-setup lista usluga prikazuje cijenu kao "25.5 KM"
+      (tačka) umjesto "25,5 KM" jer ne koristi `formatPrice`; `stEmail` u salon-setup se validira ali
+      se nigdje ne koristi/šalje.
+      **VAŽNO za backend:** sva ova pravila su frontend-only iz mock faze. Kad backend krene, MORAJU se
+      uskladiti sa Laravel Form Requests (`docs/backend.md`, `docs/frontend.md`) — posebno format
+      mobitela, min dužina lozinke i raspon popusta.
+      Napomena: `next dev` (Turbopack) se jednom srušio internim panic-om usred testa — restart je
+      riješio, nije vezano za kod.
 - [ ] Nakon svake pod-stavke: `npx tsc --noEmit` čist, pun vizuelni regresioni prolaz kroz dirnuti
       ekran (desktop+mobile), potvrda da se ponašanje NIJE promijenilo (ovo je čist refaktor, ne
       feature rad).

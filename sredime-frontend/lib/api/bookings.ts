@@ -3,6 +3,7 @@ import bookingsFixture from "@/lib/mock-data/bookings.json";
 import { getSalonById } from "@/lib/api/salons";
 import { getWorkerById } from "@/lib/api/workers";
 import { getServiceById } from "@/lib/api/services";
+import { countNoShows } from "@/lib/api/booking-metrics";
 
 /**
  * `scheduledAt` is nominally "UTC ISO 8601" per docs/database.md, but there is
@@ -161,7 +162,7 @@ export function summarizeClients(bookings: BookingDetails[]): SalonClientSummary
         phone: sorted[0].clientPhone,
         visits: sorted.length,
         lastVisitAt: sorted[0].scheduledAt,
-        noShowCount: sorted.filter((b) => b.status === "no_show").length,
+        noShowCount: countNoShows(sorted),
       };
     })
     .sort((a, b) => new Date(b.lastVisitAt).getTime() - new Date(a.lastVisitAt).getTime());

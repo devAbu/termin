@@ -107,6 +107,18 @@ export function formatMonthGenitive(date: Date): string {
   return MONTHS_BS_GENITIVE[date.getMonth()];
 }
 
+/** Local wall-clock time of an ISO timestamp, "09:05". */
+export function formatTimeOfDay(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/** Short date of an ISO timestamp, "18. sep 2026." */
+export function formatDateShort(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()}. ${formatMonthShort(d)} ${d.getFullYear()}.`;
+}
+
 /** Up to 2 uppercase initials from a full name, e.g. "Sanela Kovačević" → "SK". */
 export function initialsFromName(name: string): string {
   return name

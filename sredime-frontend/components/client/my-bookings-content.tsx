@@ -24,7 +24,8 @@ import { Icon } from "@/components/ui/icon";
 import { ModalOverlay } from "@/components/ui/modal-overlay";
 import { Toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatWeekdayShort, formatMonthShort, getEffectivePrice } from "@/lib/format";
+import { formatPrice, formatWeekdayShort, formatMonthShort } from "@/lib/format";
+import { bookingAmount } from "@/lib/api/booking-metrics";
 import { BOOKING_STATUS_TONE } from "@/lib/booking-status";
 import type { BookingDetails } from "@/lib/api/bookings";
 import type { BookingStatus } from "@/types/entities";
@@ -203,7 +204,7 @@ export function MyBookingsContent({
                       <div className="flex flex-col items-start gap-2.5 md:items-end">
                         <span className="flex flex-col items-start md:items-end">
                           <span className="text-2xs text-text-muted">{t("priceLabel")}</span>
-                          <span className="price text-lg">{formatPrice(getEffectivePrice(b.service.price, b.service.discountPercent))}</span>
+                          <span className="price text-lg">{formatPrice(bookingAmount(b))}</span>
                         </span>
                         <div className="flex flex-wrap gap-2 md:justify-end">
                           <Button asChild variant="secondary" size="sm">
@@ -272,7 +273,7 @@ export function MyBookingsContent({
                       <Badge variant={BOOKING_STATUS_TONE[h.status]}>{tStatus(h.status)}</Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-2.5 md:justify-end">
-                      <span className="price text-base">{formatPrice(getEffectivePrice(h.service.price, h.service.discountPercent))}</span>
+                      <span className="price text-base">{formatPrice(bookingAmount(h))}</span>
                       {h.status === "completed" &&
                         (reviewed ? (
                           <span className="inline-flex items-center gap-1.5 px-1 text-sm font-medium text-text-secondary">
